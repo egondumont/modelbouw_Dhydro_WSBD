@@ -298,6 +298,17 @@ def replace_crestlevel(damo_gdf=None, obj=None):
 def rand_index(damo_gdf=None, obj=None):
     return ["rand_"+str(i) for i in damo_gdf.index]
 
+def nen3610id(damo_gdf=None, obj=None, waterschap = "NL.WBHCODE.25"):
+    """"
+    vult de code in en waterschaps id en zet om naar nen3610id
+    """
+    object = obj['object']
+    s1 = waterschap #hardcoded voor waterschap Brabantse Delta
+    data = [damo_gdf.index[a] for a in damo_gdf['index']]
+    df = pd.Series(data = data, index=damo_gdf.index)
+    df = '{}.{}.'.format(s1, object) + df.astype(str)
+    return df
+
 
 if __name__ == '__main__':
     import sys

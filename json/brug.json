@@ -3,7 +3,7 @@
     "source": {
         "type": "FeatureServer",
         "path": "https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer",
-        "layer": "3"
+        "layer": "3",
 		"filter": "",
         "filter_type": "include",
         "query": ""
@@ -23,6 +23,14 @@
         "src_col": "code"
     },
     "attributes": [
+        {
+            "name": "nen3610id",
+            "type": "String",
+            "required": true,
+            "src_col": "globalid",
+            "func": "nen3610id",
+            "default": "99"
+        },
         {
             "name": "naam",
             "type": "String",
