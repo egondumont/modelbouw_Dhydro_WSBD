@@ -373,7 +373,7 @@ class HydamoObject:
         Converts datatype in text format to numpy format
         """
         if input_dtype.lower() in ["string"]:
-            return np.object
+            return object
         if input_dtype.lower() in ["shape"]:
             return "geometry"
         if input_dtype.lower() in ["integer"]:
@@ -381,7 +381,7 @@ class HydamoObject:
         if input_dtype.lower() in ["double", "float"]:
             return np.float64
         if input_dtype.lower() in ["date"]:
-            return np.datetime64
+            return "datetime64[s]"
 
     def _create_empty_gdf(self, gdf):
         """
@@ -451,7 +451,7 @@ class HydamoObject:
         convert int datatype to string"""
         if self.attr_dtype[attr] is np.int64:
             # int dtype can't handle NaN values, therefore converted to string
-            to_int = tmp_attr.astype(self.attr_dtype[attr])
+            to_int = tmp_attr.astype(str)
             return to_int.astype('object')
         else:
             return tmp_attr.astype(self.attr_dtype[attr])

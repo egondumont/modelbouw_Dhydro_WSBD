@@ -11,14 +11,14 @@ from process_weir import PROCESS_WEIR
 from process_pumping import PROCESS_PUMPING
 from process_closing import PROCESS_CLOSING
 
-root_dir=os.path.dirname(os.getcwd())
+root_dir=os.getcwd()
 
 output_dir = os.path.join(root_dir,"output",datetime.today().strftime("%Y%m%d"))
 
 input_dir= os.path.join(root_dir,"projectgebied")
 #provide without extension output folder will have the same name
-shapefiles = ["dijkring34","dijkring35"]
-#shapefiles = ["dijkring34"]
+#shapefiles = ["dijkring34","dijkring35"]
+shapefiles = ["dijkring35"]
 
 checkbuffer=[0.5,5]
 

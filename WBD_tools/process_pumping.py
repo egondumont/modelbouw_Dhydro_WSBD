@@ -30,7 +30,7 @@ class PROCESS_PUMPING:
             path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
 
             #export path
-            path_export = os.path.join(self.root_dir, "Pumping")
+            path_export = os.path.join(self.root_dir,"Pumping",dijkring,)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
@@ -40,7 +40,7 @@ class PROCESS_PUMPING:
             raw_data_station = gpd.read_file(os.path.join(path_shape,"gemaal.gpkg"))
             raw_data_station['globalid']=raw_data_station['code']
 
-            network=gpd.read_file(os.path.join(self.root_dir, "Network",'network_' + dijkring + '.gpkg'))
+            network=gpd.read_file(os.path.join(self.root_dir, "Network",dijkring,'hydroobject.gpkg'))
             network_buffer1 = network.buffer(self.checkbuffer[0],cap_style =2).unary_union
             network_buffer2 = network.buffer(self.checkbuffer[1],cap_style =2).unary_union
             network_intersection1 = raw_data.intersects(network_buffer1)
@@ -65,5 +65,5 @@ class PROCESS_PUMPING:
                     raw_data_station.drop(idx_gemaal,inplace=True)
                     raw_data.drop(index,inplace=True)
                       
-            raw_data.to_file(os.path.join(path_export,'Pump_' + dijkring + '.gpkg'), driver='GPKG') 
-            raw_data_station.to_file(os.path.join(path_export,'Gemaal_' + dijkring + '.gpkg'), driver='GPKG')
+            raw_data.to_file(os.path.join(path_export,'pomp.gpkg'), driver='GPKG') 
+            raw_data_station.to_file(os.path.join(path_export,'gemaal.gpkg'), driver='GPKG')

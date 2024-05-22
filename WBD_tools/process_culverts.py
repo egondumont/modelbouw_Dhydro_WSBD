@@ -34,12 +34,12 @@ class PROCESS_CULVERTS:
             path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
 
             #export path
-            path_export = os.path.join(self.root_dir, "Culverts")
+            path_export = os.path.join(self.root_dir,"Culverts",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
-            profile_data = gpd.read_file(os.path.join(self.root_dir,"Profiles/profiles_" + dijkring + ".gpkg"))
-            network_data = gpd.read_file(os.path.join(self.root_dir, "Network",'network_' + dijkring + '.gpkg'))
+            profile_data = gpd.read_file(os.path.join(self.root_dir,"Profiles",dijkring,"profielpunt.gpkg"))
+            network_data = gpd.read_file(os.path.join(self.root_dir, "Network",dijkring,'hydroobject.gpkg'))
             raw_data = gpd.read_file(os.path.join(path_shape,"duikersifonhevel.gpkg"))
             raw_data['globalid']=raw_data['code']
             print('start intersction culverts')
@@ -140,4 +140,5 @@ class PROCESS_CULVERTS:
             #     print(index)
             #     print(row['code'])
             print('finished updating culverts')
-            raw_data.to_file(os.path.join(path_export,'culverts_' + dijkring + '.gpkg'), driver='GPKG') 
+            # raw_data.to_file(os.path.join(path_export,'culverts_' + dijkring + '.gpkg'), driver='GPKG')
+            raw_data.to_file(os.path.join(path_export,'duikersifonhevel.gpkg'), driver='GPKG') 

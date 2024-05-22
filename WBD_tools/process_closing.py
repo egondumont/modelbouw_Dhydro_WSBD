@@ -29,7 +29,7 @@ class PROCESS_CLOSING:
             path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
 
             #export path
-            path_export = os.path.join(self.root_dir, "Closing")
+            path_export = os.path.join(self.root_dir,"Closing",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
@@ -38,8 +38,8 @@ class PROCESS_CLOSING:
 
             raw_data = gpd.read_file(shape)
             raw_data['globalid']=raw_data['code']
-            culvert_data = gpd.read_file(os.path.join(self.root_dir,"Culverts/culverts_" + dijkring + ".gpkg"))
-            pump_data = gpd.read_file(os.path.join(self.root_dir,"Pumping/Pump_" + dijkring + ".gpkg"))
+            culvert_data = gpd.read_file(os.path.join(self.root_dir,"Culverts",dijkring,"duikersifonhevel.gpkg"))
+            pump_data = gpd.read_file(os.path.join(self.root_dir,"Pumping",dijkring,"pomp.gpkg"))
             for index,row in raw_data.iterrows():
                 drop=False
                 obj_buffer=row['geometry'].buffer(self.checkbuffer[0])
@@ -65,4 +65,4 @@ class PROCESS_CLOSING:
                     raw_data.loc[index,'comment']= f'object aangevuld (binnen {self.checkbuffer[0]} m)'  
                 if drop:
                     raw_data.drop(index,inplace=True) 
-            raw_data.to_file(os.path.join(path_export,'closing_' + dijkring + '.gpkg'), driver='GPKG')    
+            raw_data.to_file(os.path.join(path_export,'afsluitmiddel.gpkg'), driver='GPKG')    

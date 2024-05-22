@@ -304,7 +304,8 @@ def nen3610id(damo_gdf=None, obj=None, waterschap = "NL.WBHCODE.25"):
     """
     object = obj['object']
     s1 = waterschap #hardcoded voor waterschap Brabantse Delta
-    data = [damo_gdf.index[a] for a in damo_gdf['index']]
+    # data = [damo_gdf.index[a] for a in damo_gdf['index']]
+    data = [a for a in damo_gdf['index']]
     df = pd.Series(data = data, index=damo_gdf.index)
     df = '{}.{}.'.format(s1, object) + df.astype(str)
     return df

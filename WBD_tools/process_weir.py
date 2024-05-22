@@ -31,7 +31,7 @@ class PROCESS_WEIR:
             path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
 
             #export path
-            path_export = os.path.join(self.root_dir, "Weir")
+            path_export = os.path.join(self.root_dir,"Weir",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
@@ -41,7 +41,7 @@ class PROCESS_WEIR:
             raw_data = gpd.read_file(os.path.join(path_shape,"stuw.gpkg"))
             raw_data['globalid']=raw_data['code']
 
-            network=gpd.read_file(os.path.join(self.root_dir, "Network",'network_' + dijkring + '.gpkg'))
+            network=gpd.read_file(os.path.join(self.root_dir, "Network",dijkring,'hydroobject.gpkg'))
             network_buffer1 = network.buffer(self.checkbuffer[0],cap_style =2).unary_union
             network_buffer2 = network.buffer(self.checkbuffer[1],cap_style =2).unary_union
             network_intersection1 = raw_data.intersects(network_buffer1)
@@ -104,4 +104,4 @@ class PROCESS_WEIR:
             #     print(index)
             #     print(row['code'])
             print('finished updating weirs')
-            raw_data.to_file(os.path.join(path_export,'weir_' + dijkring + '.gpkg'), driver='GPKG')  
+            raw_data.to_file(os.path.join(path_export,'stuw.gpkg'), driver='GPKG')  

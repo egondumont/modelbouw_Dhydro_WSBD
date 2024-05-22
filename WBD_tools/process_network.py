@@ -27,7 +27,7 @@ class PROCESS_NETWORK:
             
             #export path
 
-            path_export = os.path.join(self.root_dir, "Network")
+            path_export = os.path.join(self.root_dir, "Network",dijkring)
             # get the shapefile
             
 
@@ -166,7 +166,7 @@ class PROCESS_NETWORK:
                 
                 waterloop.loc[index,'commentconnect']=str_paralel + str_start + str_end
             waterloop.set_crs(epsg=28992)
-            waterloop.to_file(os.path.join(path_export,'network_' + dijkring + '.gpkg'), driver='GPKG') 
+            waterloop.to_file(os.path.join(path_export,'hydroobject.gpkg'), driver='GPKG') 
 
 
 # if __name__ == '__main__':

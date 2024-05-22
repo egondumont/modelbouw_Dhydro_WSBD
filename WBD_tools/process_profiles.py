@@ -92,11 +92,11 @@ class PROCESS_PROFILES:
             #export path
 
 
-            path_export = os.path.join(self.root_dir, "Profiles")
+            path_export = os.path.join(self.root_dir, "Profiles",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
-            raw_data.to_file(os.path.join(path_export,'profiles_' + dijkring + '.gpkg'), driver='GPKG')
+            raw_data.to_file(os.path.join(path_export,'profielpunt.gpkg'), driver='GPKG')
 
 
             for code in network_data['code'].values:
@@ -105,7 +105,7 @@ class PROCESS_PROFILES:
 
                     idx=network_data[network_data['code']==code].index
                     network_data.drop(idx,inplace=True)
-            path_export = os.path.join(self.root_dir, "Network")
+            path_export = os.path.join(self.root_dir, "Network",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
             network_data.to_file(os.path.join(path_export,'networkraw_' + dijkring + '.gpkg'), driver='GPKG')        
