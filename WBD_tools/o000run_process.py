@@ -20,7 +20,7 @@ input_dir= os.path.join(root_dir,"projectgebied")
 #shapefiles = ["dijkring34","dijkring35"]
 shapefiles = ["dijkring35"]
 
-checkbuffer=[0.5,5] #testcomment versie 3 
+checkbuffer=[0.5,5] 
 
 activities={'download':True,
            'network':True,
