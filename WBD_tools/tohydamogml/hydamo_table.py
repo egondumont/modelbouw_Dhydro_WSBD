@@ -443,7 +443,8 @@ class HydamoObject:
                 self.fill_na[attr] = list(empty_attr.index)
             tmp_attr[attr] = tmp_attr[attr].apply(lambda x: self.attr_dummy[attr] if pd.isnull(x) else x)
         else:
-            tmp_attr = tmp_attr[tmp_attr[attr].notna()]
+    #       tmp_attr = tmp_attr[tmp_attr[attr].notna()]
+            tmp_attr[attr].fillna(value=-999,inplace=True)
         return tmp_attr
 
     def _set_datatype(self, attr, tmp_attr):
@@ -451,7 +452,7 @@ class HydamoObject:
         convert int datatype to string"""
         if self.attr_dtype[attr] is np.int64:
             # int dtype can't handle NaN values, therefore converted to string
-            to_int = tmp_attr.astype(str)
+            to_int = tmp_attr.astype(self.attr_dtype[attr])
             return to_int.astype('object')
         else:
             return tmp_attr.astype(self.attr_dtype[attr])

@@ -17,8 +17,7 @@ output_dir = os.path.join(root_dir,"output",datetime.today().strftime("%Y%m%d"))
 
 input_dir= os.path.join(root_dir,"projectgebied")
 #provide without extension output folder will have the same name
-#shapefiles = ["dijkring34","dijkring35"]
-shapefiles = ["dijkring35"]
+shapefiles = ["dijkring34","dijkring35"]
 
 checkbuffer=[0.5,5]
 
