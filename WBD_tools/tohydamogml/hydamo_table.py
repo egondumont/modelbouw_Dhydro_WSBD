@@ -249,8 +249,10 @@ class HydamoObject:
         :param mask: shapely polygon. Only the features that intersect the polygon will be loaded
         :return: geodataframe
         """
-
-        gdf = read_filegdb(filegdb, layer)
+        if os.path.splitext(filegdb)[1] == ".gdb": # If the database is a file geodatabase
+            gdf = read_filegdb(filegdb, layer)
+        else:  # If the database is of a different type, try opening with geopandas.read_file 
+            gdf = gpd.read_file(filegdb, layer=layer) 
 
         if mask and (gdf.geometry[0] is not None):
             gdf = gdf[gdf.intersects(mask)]
@@ -339,14 +341,27 @@ class HydamoObject:
         filter: dict, {"column_name": [values] }
         filter_type: str, include or exclude
         """
+        if filter_dict is None:
+            return gdf
+
+        # Aanpassing in geval dat de bron een geodatabase was
+        # Bij inlezen uit die bron verliezen kolomnamen namelijk hun spaties verliezen en worden alle letters hoofdletters 
+        if self.obj['source'].get('type') not in ['FeatureServer','shapefile']:
+            for key in tuple(filter_dict.keys()):
+                if type(key)==str:
+                    # y=key.replace(" ","").upper()
+                    # filter_dict[y] = filter_dict[key]
+                    # filter_dict.pop(key)
+                    filter_dict[key.replace(" ","").upper()] = filter_dict.pop(key)
+
         # Filter data
-        if filter_dict is not None and filter_type == "include":
+        if filter_type == "include":
             mask = pd.DataFrame()
             for key, value in filter_dict.items():
                 mask[key] = gdf[key].isin(value)
             mask = mask.any(axis=1)
             gdf = gdf[mask]
-        if filter_dict is not None and filter_type == "exclude":
+        if filter_type == "exclude":
             mask = pd.DataFrame()
             for key, value in filter_dict.items():
                 mask[key] = gdf[key].isin(value)

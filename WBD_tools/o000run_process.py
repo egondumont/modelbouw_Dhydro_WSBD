@@ -17,17 +17,17 @@ output_dir = os.path.join(root_dir,"output",datetime.today().strftime("%Y%m%d"))
 
 input_dir= os.path.join(root_dir,"projectgebied")
 #provide without extension output folder will have the same name
-shapefiles = ["dijkring34","dijkring35"]
+shapefiles = ["dijkring35"]
 
 checkbuffer=[0.5,5]
 
 activities={'download':True,
-           'network':True,
-           'profiles':True,
-           'culverts':True,
+           'network': False,
+           'profiles':False,
+           'culverts':False,
            'weirs':True,
-           'pumping':True,
-           'closing':True}
+           'pumping':False,
+           'closing':False}
 
 if os.path.exists(output_dir):
     if activities['download']:
