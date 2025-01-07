@@ -406,7 +406,7 @@ class HydamoObject:
 
         # Raise error if geodataframe has no rows
         if len(gdf) == 0:
-            raise ValueError(f'geodataframe {self.objectname} is empty. Check your input.')
+            logging.error(f'geodataframe {self.objectname} is empty. Check your input.')
 
         return gdf
 

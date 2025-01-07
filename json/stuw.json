@@ -36,6 +36,14 @@
             "default": "99"
         },
         {
+            "name": "globalid",
+            "type": "String",
+            "required": true,
+            "src_col": "GLOBALID",
+            "func": "",
+            "default": "99"
+        },
+        {
             "name": "naam",
             "type": "String",
             "required": false,
@@ -92,14 +100,6 @@
             "default": "overlaat"
         },
         {
-            "name": "vormopening",
-            "type": "String",
-            "required": true,
-            "src_col": "",
-            "func": "",
-            "default": "Rechthoekig"
-        },
-        {
             "name": "soortregelbaarheidcode",
             "type": "Integer",
             "required": true,
@@ -111,7 +111,7 @@
             "name": "laagstedoorstroombreedte",
             "type": "Double",
             "required": true,
-            "src_col": "DOORSTROOMBREEDTE",
+            "src_col": "WS_DOORSTROOMBREEDTE_L",
             "func": "",
             "default": "-99"
         },

@@ -46,6 +46,8 @@ class GETDATA:
             json_objects = [
             os.path.join(self.path_json, "hydroobject.json"),
             os.path.join(self.path_json, "stuw.json"),
+            # os.path.join(self.path_json, "kunstwerkopening.json"),
+            # os.path.join(self.path_json, "regelmiddel.json"),
             os.path.join(self.path_json, "duikersifonhevel.json"),
             os.path.join(self.path_json, "afsluitmiddel.json"),
             os.path.join(self.path_json, "sifon.json"),

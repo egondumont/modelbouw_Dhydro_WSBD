@@ -12,6 +12,7 @@ from tohydamogml.domeinen_damo_2_2 import *
 from tohydamogml.config import *
 import logging
 import shapely
+from random import randint
 
 
 # Columns in DAMO to search for id of related object
@@ -308,6 +309,21 @@ def nen3610id(damo_gdf=None, obj=None, waterschap = "NL.WBHCODE.25"):
     data = [a for a in damo_gdf['index']]
     df = pd.Series(data = data, index=damo_gdf.index)
     df = '{}.{}.'.format(s1, object) + df.astype(str)
+    return df
+
+def globalid(len_gdf=None):
+    """"
+    Maakt globalid volgens DAMO-formatspecificatie.
+    Geeft een rij een string die op de hele wereld uniek is
+    """
+    def a(x):
+        b = 65535 # input for random hexadecimal number of 4*power digits. 65535=16**4
+        return f"{randint(0, b):04X}"*x # convert to random hexadecimal number (:x means hexadecimal)
+    
+    data = []
+    for i in range(len_gdf):
+        data.append(f"{{{a(2)}-{a(1)}-{a(1)}-{a(1)}-{a(3)}}}")
+    df = pd.Series(data)
     return df
 
 

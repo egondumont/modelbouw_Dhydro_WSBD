@@ -1,10 +1,12 @@
 {
     "object": "hydroobject",
     "source": {
-        "type": "FeatureServer",
-        "path": "https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer",
-		"layer": "13",
-		"filter": "",
+        "type": "",
+        "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
+		"layer": "hydroobject",
+		"filter": {
+            "CATEGORIEOPPWATERLICHAAM": [1]
+        },
         "filter_type": "include",
         "query": ""
     },
