@@ -1,9 +1,9 @@
 {
     "object": "duikersifonhevel",
     "source": {
-        "type": "FeatureServer",
-        "path": "https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer",
-        "layer": "11",
+        "type": "",
+        "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
+        "layer": "DuikerSifonHevel",
         "filter": "",
         "filter_type": "include",
         "query": ""

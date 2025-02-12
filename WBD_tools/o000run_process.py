@@ -21,13 +21,13 @@ output_dir = os.path.join(root_dir,"output",datetime.today().strftime("%Y%m%d"))
 
 input_dir= os.path.join(root_dir,"projectgebied")
 #provide without extension output folder will have the same name
-shapefiles = ["AaOfWeerijsStroomgebied"]
+shapefiles = ["AaOfWeerijs_deelVanHoofdloop"]
 
 checkbuffer=[0.5,5]
 
 activities={'download':True,
-           'network': False,
-           'profiles':False,
+           'network': True,
+           'profiles':True,
            'culverts':False,
            'weirs':True,
            'pumping':False,
@@ -50,16 +50,9 @@ if activities['download']:
     #try:
     getdata=GETDATA(root_dir,output_dir,input_dir,shapefiles)
     getdata.run()
-    logging.info('finished downloading data from remote server')
+    logging.info('finished downloading data')
     #except:
     #    logging.error('something went wrong while downloading data')
-
-# If the HyDAMO-valdatietool will be used, prepare the API:
-for key, value in activities.items():
-    if key != 'download':
-        if activities[key]: # If one of the 'activities', apart from 'download', will take place: Make an object of class Validatietool             
-            validatietool = validatietool(output_dir)
-            break
 
 if activities['profiles']:
     logging.info('Start processing profiles')
@@ -97,8 +90,7 @@ if activities['weirs']:
     # try:
         #correct the weirs
     processweir = PROCESS_WEIR(output_dir,shapefiles,checkbuffer)
-    processweir.initialValidate(validatietool)
-    processweir.correct()
+    processweir.run()
     logging.info('finished processing weirs')
     # except:
     #     logging.error('something went wrong while processing weirs')
@@ -122,9 +114,6 @@ if activities['closing']:
     logging.info('finished processing closing mechanisms')
     #except:
     #    logging.error('something went wrong while closing mechanisms')
-
-if validatietool: # if object 'validatietool' exists...
-     validatietool.run()    
 
 logging.info('Finished')
 logging.shutdown()

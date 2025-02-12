@@ -1,9 +1,9 @@
 {
     "object": "pomp",
     "source": {
-        "type": "FeatureServer",
-        "path": "https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer",
-        "layer": "5",
+        "type": "",
+        "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
+        "layer": "gemaal",
         "filter": "",
         "filter_type": "include",
         "query": ""
@@ -32,10 +32,18 @@
             "default": "99"
         },
         {
+            "name": "globalid",
+            "type": "String",
+            "required": false,
+            "src_col": "",
+            "func": "globalid",
+            "default": ""
+        },
+        {
             "name": "gemaalid",
             "type": "String",
             "required": false,
-            "src_col": "CODE",
+            "src_col": "GLOBALID",
             "func": "",
             "default": ""
         },

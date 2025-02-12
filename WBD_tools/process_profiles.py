@@ -3,9 +3,6 @@
 
 ### Profile script
 
-### TODO:
-### This should use an existing script to generate profiles
-
 ### Import
 import os
 import geopandas as gpd
@@ -13,7 +10,6 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from dwarsprofiel_xyz import make_profile
-from tohydamogml.read_database import read_featureserver
 from shapely import Point
 ### /import
 
@@ -29,19 +25,8 @@ class PROCESS_PROFILES:
 
         for dijkring in self.dijkringen:
             path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
-            mask = gpd.read_file(os.path.join(self.input_dir,dijkring+ '.shp'))
-           
-            print(r'reading feature server...')
-
-
-            gdf = read_featureserver(
-                r"https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Vastgestelde_Legger_Oppervlaktewaterlichamen/FeatureServer",
-                layer_index="11")
-            gdf = gdf[gdf.intersects(mask.unary_union)]
-
-            print(r'feature server read!')
             
-            raw_data = make_profile(gdf)
+            raw_data = gpd.read_file(os.path.join(path_shape,"profielpunt.gpkg"))
             raw_data['code']=raw_data['profiellijnid']
             network_data = gpd.read_file(os.path.join(path_shape,"hydroobject.gpkg"))
             
@@ -89,7 +74,6 @@ class PROCESS_PROFILES:
                         raw_data.loc[index,'geometry']=Point(raw_data.loc[index,'geometry'].x,raw_data.loc[index,'geometry'].y,5)
                         raw_data.loc[index,'Z']=5 
                     raw_data.loc[index,'commentz']='geen waarde gevonden aangevuld met stadaardwaarde'     
-            #export path
 
 
             path_export = os.path.join(self.root_dir, "Profiles",dijkring)
@@ -98,7 +82,7 @@ class PROCESS_PROFILES:
 
             raw_data.to_file(os.path.join(path_export,'profielpunt.gpkg'), driver='GPKG')
 
-
+            # remove hydroobjects without leggerprofiles
             for code in network_data['code'].values:
                 
                 if sum(raw_data['profiellijnid']==code)<4:

@@ -50,22 +50,6 @@
             "default": ""
         },
         {
-            "name": "objectbegintijd",
-            "type": "Date",
-            "required": false,
-            "src_col": "OBJECTBEGINTIJD",
-            "func": "",
-            "default": ""
-        },
-        {
-            "name": "objecteindtijd",
-            "type": "Date",
-            "required": false,
-            "src_col": "OBJECTEINDTIJD",
-            "func": "",
-            "default": ""
-        },
-        {
             "name": "hyperlink",
             "type": "String",
             "required": false,

@@ -18,7 +18,7 @@ import pandas as pd
 from shapely import ops
 from tohydamogml.gml import Gml
 from tohydamogml.gpkg import Gpkg
-from tohydamogml.read_database import read_filegdb, read_featureserver
+from tohydamogml.read_database import read_filegdb
 import logging
 from datetime import datetime
 
@@ -65,6 +65,9 @@ class HydamoObject:
                 self.mask = mask_tbl["geometry"][0]
             else:
                 print("mask has more than one record and is therefore not valid!")
+
+        if not os.path.dirname(obj['source']['path']): # if only a filename is specified, without directory...
+            obj['source']['path'] = os.path.join(os.path.dirname(self._outputfolder),obj['source']['path']) # it's assumed that the file is in the current output folder of tohydamogml 
 
         self._create_object(obj, self.mask)
 
@@ -122,14 +125,17 @@ class HydamoObject:
 
         self.gdf = self._create_empty_gdf(gdf_src)
 
-        # Add attributes
-        for attr in self.obj['attributes']:
-            self._add_attribute(attr, gdf_src)
-
         # Geometry operations
         if self.obj["geometry"]["func"]:
             func = eval("self.ws." + self.obj["geometry"]["func"])
-            self.gdf["geometry"] = pd.DataFrame(data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)})
+            if self.obj["geometry"]["one2one"]:
+                self.gdf["geometry"] = pd.DataFrame(data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)})
+            else:
+                self.gdf = func(damo_gdf=gdf_src, obj=self.obj)
+
+        # Add attributes
+        for attr in self.obj['attributes']:
+            self._add_attribute(attr, gdf_src)
 
         # Custom index operations
         if "func" in self.obj["index"].keys():
@@ -170,7 +176,9 @@ class HydamoObject:
 
     def _add_related_gdf(self, gdf_src, rel_path, rel_layer, mapping_col_src, mapping_col_rel, replace_index_col=None,
                          index_name=None, prefix="rel_"):
-        # env.workspace = rel_path
+        """
+        Join to gdf a table from another database
+        """
         gdf_rel = read_filegdb(rel_path, rel_layer)
         gdf_rel = gdf_rel.add_prefix(prefix)
 
@@ -218,6 +226,7 @@ class HydamoObject:
         Write GPKG file to .gpkg file
 
         """
+
         
         return self.gdf.to_file(os.path.join(export_folder, f"{self.objectname}.gpkg"), driver="GPKG")
 
@@ -270,39 +279,39 @@ class HydamoObject:
 
         return gdf
 
-    def _create_gdf_from_featureserver(self, url: str, layer: str, index_name: str, filter_dict: dict = None,
-                                filter_type: str = None, index_col_src: str = None, mask = None, query=None):
-        """
-        Create geodataframe from arcgis featureserver. Optionally filter rows
+    # def _create_gdf_from_featureserver(self, url: str, layer: str, index_name: str, filter_dict: dict = None,
+    #                             filter_type: str = None, index_col_src: str = None, mask = None, query=None):
+    #     """
+    #     Create geodataframe from arcgis featureserver. Optionally filter rows
 
-        :param url: path to the url of the featureserver. Typically looks like:
-                    "https://maps.XX.com/arcgis/rest/services/XX/XX/FeatureServer"
-        :param layer: name/index of the layer within the Feature Server
-        :param index_name: new name of the index column
-        :param filter_dict: dict, {"column_name": [values] }
-        :param filter_type: str, include or exclude
-        :param index_col_src: column name of the index
-        :param mask: shapely polygon. Only the features that intersect the polygon will be loaded
-        :return: geodataframe
-        """
+    #     :param url: path to the url of the featureserver. Typically looks like:
+    #                 "https://maps.XX.com/arcgis/rest/services/XX/XX/FeatureServer"
+    #     :param layer: name/index of the layer within the Feature Server
+    #     :param index_name: new name of the index column
+    #     :param filter_dict: dict, {"column_name": [values] }
+    #     :param filter_type: str, include or exclude
+    #     :param index_col_src: column name of the index
+    #     :param mask: shapely polygon. Only the features that intersect the polygon will be loaded
+    #     :return: geodataframe
+    #     """
 
-        gdf = read_featureserver(url, layer)
+    #     gdf = read_featureserver(url, layer)
 
-        if mask and (gdf.geometry[0] is not None):
-            gdf = gdf[gdf.intersects(mask)]
-        if filter_dict:
-            gdf = self._filter_gdf(gdf, filter_dict, filter_type)
-        if query:
-            gdf = gdf.query(query, engine="python")
+    #     if mask and (gdf.geometry[0] is not None):
+    #         gdf = gdf[gdf.intersects(mask)]
+    #     if filter_dict:
+    #         gdf = self._filter_gdf(gdf, filter_dict, filter_type)
+    #     if query:
+    #         gdf = gdf.query(query, engine="python")
 
-        gdf.reset_index(inplace=True)
-        gdf.set_index(index_col_src, inplace=True, drop=False)
-        gdf.index.names = [index_name]
+    #     gdf.reset_index(inplace=True)
+    #     gdf.set_index(index_col_src, inplace=True, drop=False)
+    #     gdf.index.names = [index_name]
 
-        # remove objects without a unique code
-        gdf = gdf[gdf.index.notnull()]
+    #     # remove objects without a unique code
+    #     gdf = gdf[gdf.index.notnull()]
 
-        return gdf
+    #     return gdf
 
     def _create_gdf_from_shapefile(self, path: str, index_name: str, filter_dict: dict = None,
                                 filter_type: str = None, index_col_src: str = None, mask=None, query=None):

@@ -22,74 +22,24 @@ class PROCESS_WEIR:
         self.root_dir=root_dir
         self.dijkringen=dijkringen
         self.checkbuffer=checkbuffer
-
-
-    def initialValidate(self, validatietool):
-        # Make objects "kunstwerkopening" and "regelmiddel" that are related to the existing object "stuw"  
-        # export resulting weir data to disk and to the validation task  
-        for dijkring in self.dijkringen:
-            #path to shape channels
-            path_shape=os.path.join(self.root_dir,'brondata',dijkring)
-
-            #export path for 
-            path_export = os.path.join(self.root_dir,"weir","step1",dijkring)
-            if not os.path.exists(path_export):
-                os.makedirs(path_export)
-
-            # get the data for shapefile
-            raw_data = gpd.read_file(os.path.join(path_shape,"stuw.gpkg"))
-            dropColumns = ['laagstedoorstroombreedte', 'laagstedoorstroomhoogte', 'hoogstedoorstroombreedte', 'hoogstedoorstroomhoogte']
-            raw_data.drop(columns=dropColumns).to_file(os.path.join(path_export,'stuw.gpkg'), driver='GPKG') # Export to geopackage
-
-            # Start of temporary code for the time period that 'kunstwerkopening' and 'regelmiddel' are not yet separate data objects in the 'beheerregister'
-            #     Relate object kunstwerkopening to object stuw
-            kunstwerkopening = raw_data.drop(columns=['afvoercoefficient'])
-                # make relation between 'stuw' and 'kunstwerkopening':
-                #   (Unfortunately D-hydamo can only cope with one "kunstwerkopening" for each "stuw")
-            kunstwerkopening.rename(columns={"globalid" : "stuwid"}, inplace=True) # GlobalID of object 'stuw' becomes 'stuwid' of object 'kunstwerkopening'
-            kunstwerkopening["globalid"] = globalid(len(kunstwerkopening)) # Creating a globally unique globalid for every kunstwerkopening
-            kunstwerkopening.to_file(os.path.join(path_export,'kunstwerkopening.gpkg'), driver='GPKG') # Export to geopackage
-            regelmiddel = kunstwerkopening
-            kunstwerkopening = pd.DataFrame(kunstwerkopening.drop(columns='geometry')) # kunstwerkopening is volgens DAMO een tabel zonder geometrie
-                # make relation between 'kunstwerkopening' and 'regelmiddel':
-            regelmiddel.rename(columns={"globalid" : "kunstwerkopeningid"}, inplace=True)
-            regelmiddel["overlaatonderlaat"]="Overlaat"
-            dropColumns.append('stuwid')
-            regelmiddel.drop(columns=dropColumns).to_file(os.path.join(path_export,'regelmiddel.gpkg'), driver='GPKG') # Export to geopackage       
-            # End of temporary code for the time period that 'kunstwerkopening' and 'regelmiddel' are not yet separate data objects in the 'beheerregister'
-
-            # Add weir-related data to existing validation task"
-            validatietool.addData(path_export,'stuw.gpkg')
-            validatietool.addData(path_export,'kunstwerkopening.gpkg')
-            validatietool.addData(path_export,'regelmiddel.gpkg')
-            validatietool.run() # run validation with just added objects
     
-    def correct(self):
-        # Corrections specificially developed for Waterschap Brabantse Delta, with the use of Validatietool output
+    def run(self):
+        # Weirorrections specificially developed for Waterschap Brabantse Delta
         for dijkring in self.dijkringen:
-
-            # open validation results, except syntax validation nor validation summaries
-            val_weir = gpd.read_file(
-                os.path.join(self.root_dir,'brondata/',"weir","step1",dijkring,'uitvoerValidatietool.gpkg'), 
-                columns = validatietool.getColumnNames(self,4), # 4 is the index of the object 'stuw' in the json of the Validatietool
-                layer='stuw'
-                )
-
             #path to shape channels
-            path_shape=os.path.join(self.root_dir,"weir","step1",dijkring)
+            path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
 
             #export path
-            path_export = os.path.join(self.root_dir,"weir","step2",dijkring)
+            path_export = os.path.join(self.root_dir,"Weir",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
-            # Open non-corrected weirs, kunstwerkopeningen en regelmiddelen  
-            weir = gpd.read_file(os.path.join(path_shape,'stuw.gpkg'))
-            kunstwerkopening = gpd.read_file(os.path.join(path_shape,'kunstwerkopening.gpkg'))
-            regelmiddel = gpd.read_file(os.path.join(path_shape,'regelmiddel.gpkg'))
+            # get the shapefile
+            weir = gpd.read_file(os.path.join(path_shape,"stuw.gpkg"))
+            kwo = gpd.read_file(os.path.join(path_shape,"kunstwerkopening.gpkg"))
+            regelm = gpd.read_file(os.path.join(path_shape,"regelmiddel.gpkg"))
 
             network=gpd.read_file(os.path.join(self.root_dir, "Network",dijkring,'hydroobject.gpkg'))
-
             network_buffer1 = network.buffer(self.checkbuffer[0],cap_style =2).unary_union
             network_buffer2 = network.buffer(self.checkbuffer[1],cap_style =2).unary_union
             network_intersection1 = weir.intersects(network_buffer1)
@@ -97,54 +47,34 @@ class PROCESS_WEIR:
             print('start updating weirs')
             for index,row in weir.iterrows():
                 drop=False
-                if not network_intersection2.iloc[index]:
-                    drop=True
+                if not network_intersection2.iloc[index]: # if weir is too far from any hydroobject...
+                    # remove weir and its related kunstwerkopening and regelmiddel objects
+                    x = kwo.loc[kwo['stuwid']==weir.loc[index,'globalid']]
+                    regelm.drop(regelm[regelm['kunstwerkopeningid']==x['globalid'].values[0]].index,inplace=True)
+                    kwo.drop(x.index,inplace=True)
+                    weir.drop(index,inplace=True)   
                 elif not network_intersection1.iloc[index]:
                     weir.loc[index,'commentlocatie']= f'Stuw ligt waarschijnlijk niet op netwerk (verder dan {self.checkbuffer[0]} m)'   
-                
+
+            for index,row in kwo.iterrows():                
                 if row['laagstedoorstroombreedte']<=0:
-                    if row['hoogstedoorstroombreedte']>0:
-                        
-                        weir.loc[index,'laagstedoorstroombreedte']=row['hoogstedoorstroombreedte']
-                        weir.loc[index,'commentbreedte']= 'laagstedoorstroombreedte aangevuld'
-                        if row['kruinbreedte']<=0:
-                            weir.loc[index,'kruinbreedte']=row['hoogstedoorstroombreedte']
-                    elif row['kruinbreedte']>0:
-                        weir.loc[index,'laagstedoorstroombreedte']=row['kruinbreedte']
-                        weir.loc[index,'hoogstedoorstroombreedte']=row['kruinbreedte'] 
-                        weir.loc[index,'commentbreedte']= 'hoogste- en laagstedoorstroombreedte aangevuld'   
+                    if row['kruinbreedte']>0:
+                        kwo.loc[index,'laagstedoorstroombreedte']=row['kruinbreedte']
+                        kwo.loc[index,'commentbreedte']= 'laagstedoorstroombreedte aangevuld'   
                     else:
-                        weir.loc[index,'laagstedoorstroombreedte']=1.5
-                        weir.loc[index,'hoogstedoorstroombreedte']=1.5
-                        weir.loc[index,'kruinbreedte']=1.5
-                        weir.loc[index,'commentbreedte']= 'kruinbreedte volledig aangevuld'
-                elif row['hoogstedoorstroombreedte']<=0:
-                    
-                    weir.loc[index,'hoogstedoorstroombreedte']=row['laagstedoorstroombreedte']
-                    weir.loc[index,'commentbreedte']= 'hoogstedoorstroombreedte aangevuld'
-                    if row['kruinbreedte']<=0:
-                        weir.loc[index,'kruinbreedte']=row['laagstedoorstroombreedte']
-                elif row['kruinbreedte']<=0:
-                    weir.loc[index,'kruinbreedte']=row['hoogstedoorstroombreedte']
-                    weir.loc[index,'commentbreedte']= 'kruinbreedte aangevuld'
-  
+                        kwo.loc[index,'laagstedoorstroombreedte']=1.5
+                        kwo.loc[index,'kruinbreedte']=1.5
+                        kwo.loc[index,'commentbreedte']= 'kruinbreedte en hoogste- en laagstedoorstroombreedte volledig aangevuld'
 
                 if row['laagstedoorstroomhoogte']<-10:
                     if row['hoogstedoorstroomhoogte']<-10:
-                        drop=True
+                        kwo.drop(index,inplace=True)
+                        regelm.drop(regelm.loc[regelm['kunstwerkopeningid']==kwo.loc[index,'globalid']].index,inplace=True)
                     else:
-                        weir.loc[index,'laagstedoorstroomhoogte']=row['hoogstedoorstroomhoogte']
-                        weir.loc[index,'commenthoogte']= 'laagstedoorstroomhoogte aangevuld'
-                elif  row['hoogstedoorstroomhoogte']<-10:
-                    weir.loc[index,'hoogstedoorstroomhoogte']=row['laagstedoorstroomhoogte']
-                    weir.loc[index,'commenthoogte']= 'hoogstedoorstroomhoogte aangevuld'
-
-                if row['soortregelbaarheidcode']==str(99):
-                    
-                    weir.loc[index,'commentregelbaarheid']= 'geen soortregelbaarheidcode'
-                
-                if drop:
-                    weir.drop(index,inplace=True)              
+                        kwo.loc[index,'laagstedoorstroomhoogte']=row['hoogstedoorstroomhoogte']
+                        kwo.loc[index,'commenthoogte']= 'laagstedoorstroomhoogte aangevuld'
 
             print('finished updating weirs')
             weir.to_file(os.path.join(path_export,'stuw.gpkg'), driver='GPKG')
+            kwo.to_file(os.path.join(path_export,'kunstwerkopening.gpkg'), driver='GPKG')
+            regelm.to_file(os.path.join(path_export,'regelmiddel.gpkg'), driver='GPKG')

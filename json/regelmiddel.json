@@ -1,13 +1,11 @@
 {
-    "object": "stuw",
+    "object": "regelmiddel",
     "source": {
         "type": "",
-        "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
-        "layer": "stuw",
-        "filter": {
-            "Status object": [3]
-        },
-        "filter_type": "include",
+        "path": "kunstwerkopening.gpkg",
+        "layer": "kunstwerkopening",
+        "filter": "",
+        "filter_type": "",
         "query": ""
     },
     "geometry": {
@@ -24,9 +22,25 @@
     },
     "index": {
         "name": "code",
-        "src_col": "CODE"
+        "src_col": "code"
     },
     "attributes": [
+        {
+            "name": "kunstwerkopeningid",
+            "type": "string",
+            "required": true,
+            "src_col": "globalid",
+            "func": "",
+            "default": "-99"
+        },
+        {
+            "name": "globalid",
+            "type": "String",
+            "required": true,
+            "src_col": "",
+            "func": "globalid",
+            "default": "99"
+        },
         {
             "name": "nen3610id",
             "type": "String",
@@ -36,28 +50,12 @@
             "default": "99"
         },
         {
-            "name": "globalid",
+            "name": "overlaatonderlaat",
             "type": "String",
-            "required": true,
-            "src_col": "GLOBALID",
-            "func": "",
-            "default": "99"
-        },
-        {
-            "name": "naam",
-            "type": "String",
-            "required": false,
-            "src_col": "NAAM",
-            "func": "",
-            "default": ""
-        },
-        {
-            "name": "afvoercoefficient",
-            "type": "Double",
             "required": true,
             "src_col": "",
             "func": "",
-            "default": 1.0
+            "default": "Overlaat"
         }
     ]
 }

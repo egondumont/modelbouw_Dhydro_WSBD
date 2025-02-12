@@ -46,20 +46,20 @@ class GETDATA:
             json_objects = [
             os.path.join(self.path_json, "hydroobject.json"),
             os.path.join(self.path_json, "stuw.json"),
-            # os.path.join(self.path_json, "kunstwerkopening.json"),
-            # os.path.join(self.path_json, "regelmiddel.json"),
-            os.path.join(self.path_json, "duikersifonhevel.json"),
-            os.path.join(self.path_json, "afsluitmiddel.json"),
-            os.path.join(self.path_json, "sifon.json"),
-            os.path.join(self.path_json, "brug.json"),
-            os.path.join(self.path_json, "gemaal.json"),
-            os.path.join(self.path_json, "pomp.json"),
+            os.path.join(self.path_json, "kunstwerkopening.json"),
+            os.path.join(self.path_json, "regelmiddel.json"),
+            os.path.join(self.path_json, "dwarsprofiel.json"),
+            # os.path.join(self.path_json, "duikersifonhevel.json"),
+            # os.path.join(self.path_json, "afsluitmiddel.json"),
+            # os.path.join(self.path_json, "brug.json"),
+            # os.path.join(self.path_json, "gemaal.json"),
+            # os.path.join(self.path_json, "pomp.json"),
             # os.path.join(path_json, "sturing.json"),
-            os.path.join(self.path_json, "bodemval.json"),
-            # os.path.join(path_json, "randvoorwaarden.json"),
-            #os.path.join(path_json, "profiel_legger.json")
-            #os.path.join(path_json, "dwarsprofiel_bovenstrooms_legger.json"),
-            #os.path.join(path_json, "dwarsprofiel_benedenstrooms_legger.json")
+            # os.path.join(self.path_json, "bodemval.json"),
+            # os.path.join(self.path_json, "randvoorwaarden.json"),
+            # os.path.join(self.path_json, "profiel_legger.json"),
+            # os.path.join(self.path_json, "dwarsprofiel_bovenstrooms_legger.json"),
+            # os.path.join(self.path_json, "dwarsprofiel_benedenstrooms_legger.json")
             ]
 
             #profile_objects = [os.path.join(path_json, "brug_dwp.json"), os.path.join(path_json, "profiel_legger.json")]

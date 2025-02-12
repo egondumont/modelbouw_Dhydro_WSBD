@@ -1,9 +1,9 @@
 {
     "object": "gemaal",
     "source": {
-        "type": "FeatureServer",
-        "path": "https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer",
-        "layer": "5",
+        "type": "",
+        "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
+        "layer": "gemaal",
         "filter": "",
         "filter_type": "include",
         "query": ""
@@ -30,8 +30,16 @@
             "required": true,
             "src_col": "globalid",
             "func": "nen3610id",
-      	    "default": "99"
-    	},
+            "default": "99"
+        },
+        {
+            "name": "globalid",
+            "type": "String",
+            "required": false,
+            "src_col": "GLOBALID",
+            "func": "",
+            "default": ""
+        },
         {
             "name": "naam",
             "type": "String",

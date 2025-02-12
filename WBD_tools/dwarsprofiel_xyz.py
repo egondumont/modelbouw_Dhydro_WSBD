@@ -3,14 +3,14 @@ import math
 from shapely.geometry import LineString, Point
 import logging
 import geopandas as gpd
-from tohydamogml.read_database import read_featureserver
+from tohydamogml.read_database import read_filegdb
 import tqdm
 import os
 
-def make_profile(gdf):
+def make_profile(damo_gdf,obj=None):
     data=[]
     #new_points = gpd.GeoDataFrame(geometry='geometry',crs = 'EPSG:28992')
-    for i, row in tqdm.tqdm(gdf.iterrows(), total=len(gdf)):
+    for i, row in tqdm.tqdm(damo_gdf.iterrows(), total=len(damo_gdf)):
         length = row.geometry.length
         if length > 20:
             up_dist_main, up_dist_help = 5, 10
@@ -121,16 +121,16 @@ def _make_xyz(row, distance_main, distance_help, bottom_level, bottom_width, tal
 if __name__ == '__main__':
 
     #2023-03-30 dit is oud:
-    mask = gpd.read_file(r"c:\DATA\DHYDRO\ToHyDAMOgml\examples\wbd_bres\shape\oosterwolde_clip.shp")
-    print(r'reading feature server...')
+    mask = gpd.read_file(r"G:\WS_KenA\Per_persoon\Egon\Git\modelbouwDhydroWSBD\projectgebied\AaOfWeerijs_deelVanHoofdloop.shp")
+    print(r'reading geodatabase...')
     
     #gdf = read_featureserver(r"https://maps.brabantsedelta.nl/arcgis/rest/services/Extern/Legger_Vigerend/FeatureServer",
     #                         layer_index="18")
     #gdf = gdf[gdf.drop(columns='SHAPE').intersects(mask.unary_union)]
 
-    gdf = read_featureserver(
-    r"https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Vastgestelde_Legger_Oppervlaktewaterlichamen/FeatureServer",
-    layer_index="11")
+    gdf = read_filegdb(filegdb=
+    r"G:\WS_KenA\Per_persoon\Egon\Git\modelbouwDhydroWSBD\input\acceptatiedatabase.gdb",
+    layer="LEGGER_VASTGESTELD_WATERLOOP_CATEGORIE_A")
     gdf = gdf[gdf.intersects(mask.unary_union)]
 
     print(r'feature server read!')

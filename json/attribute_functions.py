@@ -13,6 +13,9 @@ from tohydamogml.config import *
 import logging
 import shapely
 from random import randint
+import sys
+sys.path.append("..")
+from WBD_tools.dwarsprofiel_xyz import make_profile, _make_xyz
 
 
 # Columns in DAMO to search for id of related object
@@ -311,27 +314,30 @@ def nen3610id(damo_gdf=None, obj=None, waterschap = "NL.WBHCODE.25"):
     df = '{}.{}.'.format(s1, object) + df.astype(str)
     return df
 
-def globalid(len_gdf=None):
+def globalid(damo_gdf=None, obj=None):
     """"
     Maakt globalid volgens DAMO-formatspecificatie.
     Geeft een rij een string die op de hele wereld uniek is
     """
-    def a(x):
-        b = 65535 # input for random hexadecimal number of 4*power digits. 65535=16**4
-        return f"{randint(0, b):04X}"*x # convert to random hexadecimal number (:x means hexadecimal)
-    
-    data = []
-    for i in range(len_gdf):
-        data.append(f"{{{a(2)}-{a(1)}-{a(1)}-{a(1)}-{a(3)}}}")
-    df = pd.Series(data)
+
+    def b(x):
+        def a(c):
+            b = 65535 # input for random hexadecimal number of 4*c digits. 65535=16**4
+            return f"{randint(0, b):04X}"*c # convert to random hexadecimal number (:X means hexadecimal with capital letters)
+        x = f"{{{a(2)}-{a(1)}-{a(1)}-{a(1)}-{a(3)}}}"
+        return x  
+
+    data = [a for a in damo_gdf['index']]
+    df = pd.Series(data = data, index=damo_gdf.index)
+    df = df.apply(b)
     return df
 
 
 if __name__ == '__main__':
     import sys
-    sys.path.append('../../..')
-    from tohydamogml.read_database import read_featureserver
-    waterlopen = read_featureserver('https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer', '13')
-    # waterlopen = read_featureserver('https://maps.brabantsedelta.nl/arcgis/rest/services/Extern/Kunstwerken/FeatureServer', '14')
-    test = waterlopen.iloc[0]
-    print(test)
+    # sys.path.append('../../..')
+    # from tohydamogml.read_database import read_featureserver
+    # waterlopen = read_featureserver('https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer', '13')
+    # # waterlopen = read_featureserver('https://maps.brabantsedelta.nl/arcgis/rest/services/Extern/Kunstwerken/FeatureServer', '14')
+    # test = waterlopen.iloc[0]
+    # print(test)

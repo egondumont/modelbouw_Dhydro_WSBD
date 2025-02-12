@@ -27,6 +27,3 @@ RUWHEID_VEN_TE_CHOW = {
     'gegolfd plaatstaal': 65,
     'asbestcement': 110
 }
-
-
-
