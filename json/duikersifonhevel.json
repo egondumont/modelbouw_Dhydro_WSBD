@@ -40,6 +40,14 @@
             "default": ""
         },
         {
+            "name": "globalid",
+            "type": "String",
+            "required": true,
+            "src_col": "GLOBALID",
+            "func": "",
+            "default": "99"
+        },
+        {
             "name": "statusobjectcode",
             "type": "Integer",
             "required": false,

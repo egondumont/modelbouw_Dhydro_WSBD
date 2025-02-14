@@ -15,12 +15,7 @@ class validatietool:
         self.root_dir=os.getcwd()
         self.output_dir = output_dir
         self.rules=os.path.join(self.root_dir,"validatietool","ValidationRules.json")
-        # set path+name of validation tool certificate file (pem file)
-        for file in os.listdir(os.path.join(self.root_dir,"input")):
-            # check the files which are end with extension 'pem'
-            if file.endswith(".pem"):
-                self.hydamo_cert = os.path.join(self.root_dir,"input", file)
-                break
+        self.hydamo_cert=os.path.join(self.root_dir,"validatietool","HyDAMOValidatietoolCertificaat.pem") # set path+name of validation tool certificate file (pem file)
 
         try:
             # log into API 
