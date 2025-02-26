@@ -68,8 +68,8 @@ class PROCESS_WEIR:
 
                 if row['laagstedoorstroomhoogte']<-10:
                     if row['hoogstedoorstroomhoogte']<-10:
-                        kwo.drop(index,inplace=True)
                         regelm.drop(regelm.loc[regelm['kunstwerkopeningid']==kwo.loc[index,'globalid']].index,inplace=True)
+                        kwo.drop(index,inplace=True)
                     else:
                         kwo.loc[index,'laagstedoorstroomhoogte']=row['hoogstedoorstroomhoogte']
                         kwo.loc[index,'commenthoogte']= 'laagstedoorstroomhoogte aangevuld'
