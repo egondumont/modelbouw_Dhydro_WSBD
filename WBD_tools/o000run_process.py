@@ -28,10 +28,10 @@ checkbuffer=[0.5,5]
 activities={'download':True,
            'network': True,
            'profiles':True,
-           'culverts':False,
+           'culverts':True,
            'weirs':True,
-           'pumping':False,
-           'closing':False}
+           'pumping':True,
+           'closing':True}
 
 if os.path.exists(output_dir):
     if activities['download']:

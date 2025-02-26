@@ -2,8 +2,5 @@ log/
 input/
 output/
 projectgebied/
-WBD_tools/tohydamogml/__pycache__/
-WBD_tools/validatietool/__pycache__/
 WBD_tools/.ipynb_checkpoints/
-json/__pycache__/
-WBD_tools/__pycache__/
+**/__pycache__/

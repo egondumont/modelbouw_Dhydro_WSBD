@@ -41,6 +41,7 @@ class PROCESS_CULVERTS:
             profile_data = gpd.read_file(os.path.join(self.root_dir,"Profiles",dijkring,"profielpunt.gpkg"))
             network_data = gpd.read_file(os.path.join(self.root_dir, "Network",dijkring,'hydroobject.gpkg'))
             raw_data = gpd.read_file(os.path.join(path_shape,"duikersifonhevel.gpkg"))
+            raw_data['globalid']=raw_data['code']
             print('start intersction culverts')
             
             network_buffer1 = network_data.buffer(self.checkbuffer[0],cap_style =2).unary_union
@@ -104,7 +105,7 @@ class PROCESS_CULVERTS:
                                     new_z=min(points_down['Z'])+distance_down/(distance_up+distance_down)*(min(points_up['Z'])-min(points_down['Z']))
                                     raw_data.loc[index,'hoogtebinnenonderkantbene']=new_z
                                     raw_data.loc[index,'hoogtebinnenonderkantbov']=new_z+0.02
-                                    raw_data.loc[index,'commentbodem']= f'bodem aangevuld o.b.v. dwarsprofielinformatie van hydroobject binnen binnen {self.checkbuffer[1]} m'  
+                                    raw_data.loc[index,'commentbodem']= f'bodem aangevuld (met obejct binnen {self.checkbuffer[1]} m)'  
                         else:
                             points_up=profile_data[profile_data['code'].str.fullmatch(network_data['code'][obj_intersect].values[0])]
                             points_down=profile_data[profile_data['code'].str.contains(network_data['code'][obj_intersect].values[0]+'_down')]
@@ -117,7 +118,7 @@ class PROCESS_CULVERTS:
                                 new_z=min(points_down['Z'])+distance_down/(distance_up+distance_down)*(min(points_up['Z'])-min(points_down['Z']))
                                 raw_data.loc[index,'hoogtebinnenonderkantbene']=new_z
                                 raw_data.loc[index,'hoogtebinnenonderkantbov']=new_z+0.02
-                                raw_data.loc[index,'commentbodem']= f'bodem aangevuld o.b.v. dwarsprofielinformatie van hydroobject binnen binnen {self.checkbuffer[0]} m'
+                                raw_data.loc[index,'commentbodem']= f'bodem aangevuld (met obejct binnen {self.checkbuffer[0]} m)'
                                
                         
                     else:
