@@ -80,7 +80,11 @@ class PROCESS_PROFILES:
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
 
-            raw_data.to_file(os.path.join(path_export,'profielpunt.gpkg'), driver='GPKG')
+            raw_data.set_crs(epsg=28992, inplace=True, allow_override=True)
+            if len(self.dijkringen) > 1:
+                raw_data.to_file(os.path.join(path_export,'profielpunt_' + dijkring + '.gpkg'), driver='GPKG')
+            else:
+                raw_data.to_file(os.path.join(path_export,'profielpunt.gpkg'), driver='GPKG')
 
             # remove hydroobjects without leggerprofiles
             for code in network_data['code'].values:
@@ -89,8 +93,10 @@ class PROCESS_PROFILES:
 
                     idx=network_data[network_data['code']==code].index
                     network_data.drop(idx,inplace=True)
+
             path_export = os.path.join(self.root_dir, "Network",dijkring)
             if not os.path.exists(path_export):
                 os.makedirs(path_export)
+
             network_data.to_file(os.path.join(path_export,'networkraw_' + dijkring + '.gpkg'), driver='GPKG')        
                  

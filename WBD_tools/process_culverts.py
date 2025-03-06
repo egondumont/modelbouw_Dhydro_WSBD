@@ -140,5 +140,8 @@ class PROCESS_CULVERTS:
             #     print(index)
             #     print(row['code'])
             print('finished updating culverts')
-            # raw_data.to_file(os.path.join(path_export,'culverts_' + dijkring + '.gpkg'), driver='GPKG')
-            raw_data.to_file(os.path.join(path_export,'duikersifonhevel.gpkg'), driver='GPKG') 
+            raw_data.set_crs(epsg=28992, inplace=True, allow_override=True)
+            if len(self.dijkringen) > 1:
+                raw_data.to_file(os.path.join(path_export,'culverts_' + dijkring + '.gpkg'), driver='GPKG')
+            else:
+                raw_data.to_file(os.path.join(path_export,'duikersifonhevel.gpkg'), driver='GPKG') 
