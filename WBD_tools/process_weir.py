@@ -7,14 +7,6 @@
 import os
 os.environ['USE_PYGEOS'] = '0'
 import geopandas as gpd
-import pandas as pd
-import numpy as np
-from datetime import datetime
-import json
-import random
-import sys
-sys.path.append("./json")
-from attribute_functions import globalid
 
 class PROCESS_WEIR:
     
