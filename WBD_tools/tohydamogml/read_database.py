@@ -53,8 +53,10 @@ from shapely.geometry import Point, LineString
 
 def read_filegdb(filegdb, layer):
     """Read filegdb with fiona to get original objectid. Return geopandas dataframe or pandas dataframe"""
+    
     if layer in fiona.listlayers(filegdb):
         features = _yield_features(filegdb, layer)
+       
         if next(features)["geometry"] is not None:
             gdf = gpd.GeoDataFrame.from_features(features, crs=get_crs(filegdb, layer))
             gdf[COLNAME_OID] = gdf[COLNAME_OID].astype(int)

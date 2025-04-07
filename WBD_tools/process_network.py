@@ -191,10 +191,7 @@ class PROCESS_NETWORK:
                             waterloop = pd.concat([waterloop,row2.to_frame().T],ignore_index=True) # append second half of split hydroobject to hydroobjects 
             
             waterloop.set_crs(epsg=28992, inplace=True, allow_override=True)
-            if len(self.dijkringen) > 1:
-                waterloop.to_file(os.path.join(path_export,'hydroobject_' + dijkring + '.gpkg'), driver='GPKG')
-            else:
-                waterloop.to_file(os.path.join(path_export,'hydroobject.gpkg'), driver='GPKG') 
+            waterloop.to_file(os.path.join(path_export,'hydroobject.gpkg'), driver='GPKG') 
 
 
 # if __name__ == '__main__':
