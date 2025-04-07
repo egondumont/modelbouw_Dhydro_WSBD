@@ -16,7 +16,7 @@ class PROCESS_WEIR:
         self.checkbuffer=checkbuffer
     
     def run(self):
-        # Weirorrections specificially developed for Waterschap Brabantse Delta
+        # Weir corrections specificially developed for Waterschap Brabantse Delta
         for dijkring in self.dijkringen:
             #path to shape channels
             path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
@@ -38,7 +38,6 @@ class PROCESS_WEIR:
             network_intersection2 = weir.intersects(network_buffer2)
             print('start updating weirs')
             for index,row in weir.iterrows():
-                drop=False
                 if not network_intersection2.iloc[index]: # if weir is too far from any hydroobject...
                     # remove weir and its related kunstwerkopening and regelmiddel objects
                     x = kwo.loc[kwo['stuwid']==weir.loc[index,'globalid']]
@@ -61,6 +60,7 @@ class PROCESS_WEIR:
                 if row['laagstedoorstroomhoogte']<-10:
                     if row['hoogstedoorstroomhoogte']<-10:
                         regelm.drop(regelm.loc[regelm['kunstwerkopeningid']==kwo.loc[index,'globalid']].index,inplace=True)
+                        weir.drop(weir.loc[weir['globalid']==kwo.loc[index,'stuwid']].index,inplace=True)
                         kwo.drop(index,inplace=True)
                     else:
                         kwo.loc[index,'laagstedoorstroomhoogte']=row['hoogstedoorstroomhoogte']
