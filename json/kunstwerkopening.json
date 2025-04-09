@@ -82,6 +82,14 @@
             "src_col": "KRUINBREEDTE",
             "func": "",
             "default": "-99"
+        },
+        {
+            "name": "afvoerCoefficient",
+            "type": "Double",
+            "required": true,
+            "src_col": "",
+            "func": "",
+            "default": "0.93"
         }
     ]
 }

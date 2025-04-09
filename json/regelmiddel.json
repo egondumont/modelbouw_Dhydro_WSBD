@@ -56,6 +56,30 @@
             "src_col": "",
             "func": "",
             "default": "Overlaat"
+        },
+        {
+            "name": "soortRegelbaarheid",
+            "type": "Integer",
+            "required": true,
+            "src_col": "",
+            "func": "",
+            "default": 99
+        },
+        {
+            "name": "duikersifonhevelid",
+            "type": "String",
+            "required": true,
+            "src_col": "",
+            "func": "",
+            "default": "99"
+        },
+        {
+            "name": "soortregelmiddel",
+            "type": "String",
+            "required": true,
+            "src_col": "",
+            "func": "",
+            "default": "99"
         }
     ]
 }
