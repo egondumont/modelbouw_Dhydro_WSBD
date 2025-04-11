@@ -2,7 +2,7 @@
   "object": "profielpunt",
   "source": {
     "type": "",
-    "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
+    "path": "d:\\repositories\\modelbouw_Dhydro_WSBD\\input\\acceptatiedatabase.gdb",
     "layer": "LEGGER_VASTGESTELD_WATERLOOP_CATEGORIE_A",
     "filter": "",
     "filter_type": "include",

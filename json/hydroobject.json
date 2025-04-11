@@ -2,7 +2,7 @@
     "object": "hydroobject",
     "source": {
         "type": "",
-        "path": "G:\\WS_KenA\\Per_persoon\\Egon\\Git\\modelbouwDhydroWSBD\\input\\acceptatiedatabase.gdb",
+        "path": "d:\\repositories\\modelbouw_Dhydro_WSBD\\input\\acceptatiedatabase.gdb",
 		"layer": "hydroobject",
 		"filter": {
             "CATEGORIEOPPWATERLICHAAM": [1]
