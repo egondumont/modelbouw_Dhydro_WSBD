@@ -49,7 +49,6 @@ class HydamoObject:
             fname_ext = os.path.basename(file_attribute_functions)
             dirname = os.path.dirname(file_attribute_functions)
             sys.path.append(dirname)
-            print(os.path.splitext(fname_ext)[0])
             self.ws = __import__(os.path.splitext(fname_ext)[0])
 
         with open(path_json) as f:
@@ -343,7 +342,7 @@ class HydamoObject:
         else:  # If the database is of a different type, try opening with geopandas.read_file
             gdf = gpd.read_file(filegdb, layer=layer)
 
-        if mask and (gdf.geometry[0] is not None):
+        if mask and (not gdf.geometry.isna().any()):
             gdf = gdf[gdf.intersects(mask)]
         if filter_dict:
             gdf = self._filter_gdf(gdf, filter_dict, filter_type)

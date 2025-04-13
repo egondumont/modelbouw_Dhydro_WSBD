@@ -14,6 +14,7 @@ from process_weir import PROCESS_WEIR
 from process_pumping import PROCESS_PUMPING
 from process_closing import PROCESS_CLOSING
 from validatietool.validatietool import validatietool
+from tohydamogml.hydamo_table import HydamoObject
 
 # relative path tot parent folder of script order to access model attribute_functions in folder 'json'
 file_path = Path(__file__)
@@ -54,6 +55,8 @@ logging.basicConfig(
 )
 logging.info("Started")
 
+# %%
+
 if activities["download"]:
     logging.info("Start downloading data from remote server")
     # download data from remote server and apply default values on missing data
@@ -63,6 +66,7 @@ if activities["download"]:
     logging.info("finished downloading data")
     # except:
     #    logging.error('something went wrong while downloading data')
+
 
 if activities["profiles"]:
     logging.info("Start processing profiles")
@@ -127,3 +131,5 @@ if activities["closing"]:
 
 logging.info("Finished")
 logging.shutdown()
+
+# %%
