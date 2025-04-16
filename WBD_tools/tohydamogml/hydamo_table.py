@@ -9,7 +9,8 @@ Vragen en opmerkingen met betrekking tot dit script kun je mailen aan jeroen.win
 """
 
 import os
-os.environ['USE_PYGEOS'] = '0'
+
+os.environ["USE_PYGEOS"] = "0"
 import sys
 import json
 import numpy as np
@@ -22,13 +23,20 @@ from tohydamogml.read_database import read_filegdb
 import logging
 from datetime import datetime
 
+
 class HydamoObject:
     """
     Creates geopandas dataframe for a HyDAMO object with all the required attributes
     """
 
-    def __init__(self, path_json: str, print_gml=True, mask: str = None, file_attribute_functions=None,
-                 outputfolder=None):
+    def __init__(
+        self,
+        path_json: str,
+        print_gml=True,
+        mask: str = None,
+        file_attribute_functions=None,
+        outputfolder=None,
+    ):
         """
 
         :param path_json: str, path to JSON input file
@@ -47,7 +55,7 @@ class HydamoObject:
             obj = json.load(f)
 
         self.obj = obj
-        self.objectname = obj['object']
+        self.objectname = obj["object"]
         self.gdf = None
         self.attr_dtype = {}
         self.attr_required = {}
@@ -66,8 +74,12 @@ class HydamoObject:
             else:
                 print("mask has more than one record and is therefore not valid!")
 
-        if not os.path.dirname(obj['source']['path']): # if only a filename is specified, without directory...
-            obj['source']['path'] = os.path.join(os.path.dirname(self._outputfolder),obj['source']['path']) # it's assumed that the file is in the current output folder of tohydamogml 
+        if not os.path.dirname(
+            obj["source"]["path"]
+        ):  # if only a filename is specified, without directory...
+            obj["source"]["path"] = os.path.join(
+                os.path.dirname(self._outputfolder), obj["source"]["path"]
+            )  # it's assumed that the file is in the current output folder of tohydamogml
 
         self._create_object(obj, self.mask)
 
@@ -79,49 +91,60 @@ class HydamoObject:
         Create gdf for hydroobject
         """
         # Load Data
-        if obj['source'].get('type') == 'FeatureServer':
-            gdf_src = self._create_gdf_from_featureserver(url=obj['source']['path'],
-                                                          layer=obj['source']['layer'],
-                                                          index_name=obj["index"]['name'],
-                                                          filter_dict=obj["source"]["filter"],
-                                                          filter_type=obj["source"]["filter_type"],
-                                                          index_col_src=obj["index"]["src_col"],
-                                                          mask=mask,
-                                                          query=obj["source"]["query"]
-                                                          )
-        elif obj['source'].get('type') == 'Shapefile':
-            gdf_src = self._create_gdf_from_shapefile(path=obj['source']['path'],
-                                                      index_name=obj["index"]['name'],
-                                                      filter_dict=obj["source"]["filter"],
-                                                      filter_type=obj["source"]["filter_type"],
-                                                      index_col_src=obj["index"]["src_col"],
-                                                      mask=mask,
-                                                      query=obj["source"]["query"])
+        if obj["source"].get("type") == "FeatureServer":
+            gdf_src = self._create_gdf_from_featureserver(
+                url=obj["source"]["path"],
+                layer=obj["source"]["layer"],
+                index_name=obj["index"]["name"],
+                filter_dict=obj["source"]["filter"],
+                filter_type=obj["source"]["filter_type"],
+                index_col_src=obj["index"]["src_col"],
+                mask=mask,
+                query=obj["source"]["query"],
+            )
+        elif obj["source"].get("type") == "Shapefile":
+            gdf_src = self._create_gdf_from_shapefile(
+                path=obj["source"]["path"],
+                index_name=obj["index"]["name"],
+                filter_dict=obj["source"]["filter"],
+                filter_type=obj["source"]["filter_type"],
+                index_col_src=obj["index"]["src_col"],
+                mask=mask,
+                query=obj["source"]["query"],
+            )
         else:
-            gdf_src = self._create_gdf_from_gdb(layer=obj["source"]["layer"],
-                                                filegdb=obj["source"]["path"],
-                                                index_name=obj["index"]['name'],
-                                                filter_dict=obj["source"]["filter"],
-                                                filter_type=obj["source"]["filter_type"],
-                                                index_col_src=obj["index"]["src_col"],
-                                                mask=mask,
-                                                query=obj["source"]["query"])
+            gdf_src = self._create_gdf_from_gdb(
+                layer=obj["source"]["layer"],
+                filegdb=obj["source"]["path"],
+                index_name=obj["index"]["name"],
+                filter_dict=obj["source"]["filter"],
+                filter_type=obj["source"]["filter_type"],
+                index_col_src=obj["index"]["src_col"],
+                mask=mask,
+                query=obj["source"]["query"],
+            )
 
         # join related table
-        if obj['related_data']["path"]:
-            if obj['related_data'].get('type') == 'csv':
-                gdf_src = self._add_related_csv(gdf_src, csv_path=obj['related_data']['path'],
-                                                mapping_col_src=obj['related_data']['mapping_col_src'],
-                                                mapping_col_rel=obj['related_data']['mapping_col_rel'],
-                                                replace_index_col=obj['related_data']['replace_index_col'],
-                                                index_name=obj["index"]['name'])
+        if obj["related_data"]["path"]:
+            if obj["related_data"].get("type") == "csv":
+                gdf_src = self._add_related_csv(
+                    gdf_src,
+                    csv_path=obj["related_data"]["path"],
+                    mapping_col_src=obj["related_data"]["mapping_col_src"],
+                    mapping_col_rel=obj["related_data"]["mapping_col_rel"],
+                    replace_index_col=obj["related_data"]["replace_index_col"],
+                    index_name=obj["index"]["name"],
+                )
             else:
-                gdf_src = self._add_related_gdf(gdf_src, rel_path=obj['related_data']['path'],
-                                                rel_layer=obj['related_data']['layer'],
-                                                mapping_col_src=obj['related_data']['mapping_col_src'],
-                                                mapping_col_rel=obj['related_data']['mapping_col_rel'],
-                                                replace_index_col=obj['related_data']['replace_index_col'],
-                                                index_name=obj["index"]['name'])
+                gdf_src = self._add_related_gdf(
+                    gdf_src,
+                    rel_path=obj["related_data"]["path"],
+                    rel_layer=obj["related_data"]["layer"],
+                    mapping_col_src=obj["related_data"]["mapping_col_src"],
+                    mapping_col_rel=obj["related_data"]["mapping_col_rel"],
+                    replace_index_col=obj["related_data"]["replace_index_col"],
+                    index_name=obj["index"]["name"],
+                )
 
         self.gdf = self._create_empty_gdf(gdf_src)
 
@@ -129,31 +152,39 @@ class HydamoObject:
         if self.obj["geometry"]["func"]:
             func = eval("self.ws." + self.obj["geometry"]["func"])
             if self.obj["geometry"]["one2one"]:
-                self.gdf["geometry"] = pd.DataFrame(data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)})
+                self.gdf["geometry"] = pd.DataFrame(
+                    data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)}
+                )
             else:
                 self.gdf = func(damo_gdf=gdf_src, obj=self.obj)
 
         # Add attributes
-        for attr in self.obj['attributes']:
+        for attr in self.obj["attributes"]:
             self._add_attribute(attr, gdf_src)
 
         # Custom index operations
         if "func" in self.obj["index"].keys():
             func = eval("self.ws." + self.obj["index"]["func"])
-            ind = pd.Index(data=func(damo_gdf=gdf_src, obj=self.obj), name='code')
+            ind = pd.Index(data=func(damo_gdf=gdf_src, obj=self.obj), name="code")
             self.gdf.index = ind
 
         # Write filled na values to gpkg
         if len(self.fill_na) > 0:
             for key, value in self.fill_na.items():
                 if "geometry" in self.gdf.columns:
-                    self.gdf.loc[value, [key, "geometry"]].to_file(os.path.join(self.output_folder,f"fill-na_{self.objectname}_{key}.gpkg"), driver="GPKG")
+                    self.gdf.loc[value, [key, "geometry"]].to_file(
+                        os.path.join(
+                            self.output_folder, f"fill-na_{self.objectname}_{key}.gpkg"
+                        ),
+                        driver="GPKG",
+                    )
                 else:
-                    self.gdf.loc[value, key].to_csv(os.path.join(self.output_folder, f"fill_na_{key}.csv"))
-
+                    self.gdf.loc[value, key].to_csv(
+                        os.path.join(self.output_folder, f"fill_na_{key}.csv")
+                    )
 
         if self.obj["geometry"]["drop"] is True:
-            self.gdf = self.gdf.drop(['geometry'], axis=1)
+            self.gdf = self.gdf.drop(["geometry"], axis=1)
             self.gdf.crs = None
         else:
             self._linemerge()
@@ -163,38 +194,65 @@ class HydamoObject:
         """
         Add attribute to gdf
         """
-        if attr['src_col'] or attr['func']:
-            if attr['func']:
-                func = eval("self.ws." + attr['func'])
+        if attr["src_col"] or attr["func"]:
+            if attr["func"]:
+                func = eval("self.ws." + attr["func"])
             else:
                 func = None
-            self._add_src_attr(attr['name'], gdf, func)
-        elif attr['default'] != "":
-            self._add_fixed_value_attr(attr['name'], attr['default'])
+            self._add_src_attr(attr["name"], gdf, func)
+        elif attr["default"] != "":
+            self._add_fixed_value_attr(attr["name"], attr["default"])
         else:
             print("Attribute ", attr, " not added")
 
-    def _add_related_gdf(self, gdf_src, rel_path, rel_layer, mapping_col_src, mapping_col_rel, replace_index_col=None,
-                         index_name=None, prefix="rel_"):
+    def _add_related_gdf(
+        self,
+        gdf_src,
+        rel_path,
+        rel_layer,
+        mapping_col_src,
+        mapping_col_rel,
+        replace_index_col=None,
+        index_name=None,
+        prefix="rel_",
+    ):
         """
         Join to gdf a table from another database
         """
         gdf_rel = read_filegdb(rel_path, rel_layer)
         gdf_rel = gdf_rel.add_prefix(prefix)
 
-        gdf_src = gdf_src.merge(gdf_rel, how="left", left_on=mapping_col_src, right_on=prefix+mapping_col_rel)
+        gdf_src = gdf_src.merge(
+            gdf_rel,
+            how="left",
+            left_on=mapping_col_src,
+            right_on=prefix + mapping_col_rel,
+        )
         if replace_index_col:
             gdf_src.set_index(replace_index_col, append=False, inplace=True)
             gdf_src.index.names = [index_name]
         return gdf_src[gdf_src.index.notnull()]
 
-    def _add_related_csv(self, gdf_src, csv_path, mapping_col_src, mapping_col_rel, replace_index_col=None,
-                         index_name=None, prefix="rel_"):
+    def _add_related_csv(
+        self,
+        gdf_src,
+        csv_path,
+        mapping_col_src,
+        mapping_col_rel,
+        replace_index_col=None,
+        index_name=None,
+        prefix="rel_",
+    ):
         # env.workspace = rel_path
         gdf_rel = pd.read_csv(csv_path)
         gdf_rel = gdf_rel.add_prefix(prefix)
 
-        gdf_src = gdf_src.merge(gdf_rel, how="left", left_on=mapping_col_src, right_on=prefix+mapping_col_rel)
+        gdf_src = gdf_src.merge(
+            gdf_rel,
+            how="left",
+            left_on=mapping_col_src,
+            right_on=prefix + mapping_col_rel,
+        )
         if replace_index_col:
             gdf_src.set_index(replace_index_col, append=False, inplace=True)
             gdf_src.index.names = [index_name]
@@ -206,7 +264,9 @@ class HydamoObject:
         Get GML
         """
         if self._gml is None:
-            self._gml = Gml(self.gdf.reset_index(), self.objectname, outputfolder=self._outputfolder)
+            self._gml = Gml(
+                self.gdf.reset_index(), self.objectname, outputfolder=self._outputfolder
+            )
         return self._gml
 
     def print_gml(self):
@@ -215,20 +275,29 @@ class HydamoObject:
         """
         return self.gml.print()
 
-    def write_gml(self, export_folder, ignore_errors=False, skip_validation=False, suffix: str = ""):
+    def write_gml(
+        self,
+        export_folder,
+        ignore_errors=False,
+        skip_validation=False,
+        suffix: str = "",
+    ):
         """
         Write GML file to .gml file
         """
-        return self.gml.write(export_folder, ignore_errors, skip_validation, suffix=suffix)
+        return self.gml.write(
+            export_folder, ignore_errors, skip_validation, suffix=suffix
+        )
 
-    def write_gpkg(self,export_folder):
+    def write_gpkg(self, export_folder):
         """
         Write GPKG file to .gpkg file
 
         """
 
-        
-        return self.gdf.to_file(os.path.join(export_folder, f"{self.objectname}.gpkg"), driver="GPKG")
+        return self.gdf.to_file(
+            os.path.join(export_folder, f"{self.objectname}.gpkg"), driver="GPKG"
+        )
 
     def validatie_gpkg(self):
         """
@@ -236,16 +305,23 @@ class HydamoObject:
         """
         return self.gpkg(self)
 
-
-
     def validate_gml(self, write_error_log=False):
         """
         Validate GML with XSD (XSD loc defined in config file)
         """
         return self.gml.validate(write_error_log)
 
-    def _create_gdf_from_gdb(self, layer: str, filegdb: str, index_name: str, filter_dict: dict = None,
-                             filter_type: str = None, index_col_src: str = None, mask=None, query=None):
+    def _create_gdf_from_gdb(
+        self,
+        layer: str,
+        filegdb: str,
+        index_name: str,
+        filter_dict: dict = None,
+        filter_type: str = None,
+        index_col_src: str = None,
+        mask=None,
+        query=None,
+    ):
         """
         Create geodataframe from database. Optionally filter rows
 
@@ -258,12 +334,14 @@ class HydamoObject:
         :param mask: shapely polygon. Only the features that intersect the polygon will be loaded
         :return: geodataframe
         """
-        if os.path.splitext(filegdb)[1] == ".gdb": # If the database is a file geodatabase
+        if (
+            os.path.splitext(filegdb)[1] == ".gdb"
+        ):  # If the database is a file geodatabase
             gdf = read_filegdb(filegdb, layer)
-        else:  # If the database is of a different type, try opening with geopandas.read_file 
-            gdf = gpd.read_file(filegdb, layer=layer) 
+        else:  # If the database is of a different type, try opening with geopandas.read_file
+            gdf = gpd.read_file(filegdb, layer=layer)
 
-        if mask and (gdf.geometry[0] is not None):
+        if mask and (not gdf.geometry.isna().any()):
             gdf = gdf[gdf.intersects(mask)]
         if filter_dict:
             gdf = self._filter_gdf(gdf, filter_dict, filter_type)
@@ -313,8 +391,16 @@ class HydamoObject:
 
     #     return gdf
 
-    def _create_gdf_from_shapefile(self, path: str, index_name: str, filter_dict: dict = None,
-                                filter_type: str = None, index_col_src: str = None, mask=None, query=None):
+    def _create_gdf_from_shapefile(
+        self,
+        path: str,
+        index_name: str,
+        filter_dict: dict = None,
+        filter_type: str = None,
+        index_col_src: str = None,
+        mask=None,
+        query=None,
+    ):
         """
         Create geodataframe from local shapefile (or gpkg!). Optionally filter rows
 
@@ -354,14 +440,14 @@ class HydamoObject:
             return gdf
 
         # Aanpassing in geval dat de bron een geodatabase was
-        # Bij inlezen uit die bron verliezen kolomnamen namelijk hun spaties verliezen en worden alle letters hoofdletters 
-        if self.obj['source'].get('type') not in ['FeatureServer','shapefile']:
+        # Bij inlezen uit die bron verliezen kolomnamen namelijk hun spaties verliezen en worden alle letters hoofdletters
+        if self.obj["source"].get("type") not in ["FeatureServer", "shapefile"]:
             for key in tuple(filter_dict.keys()):
-                if type(key)==str:
+                if type(key) == str:
                     # y=key.replace(" ","").upper()
                     # filter_dict[y] = filter_dict[key]
                     # filter_dict.pop(key)
-                    filter_dict[key.replace(" ","").upper()] = filter_dict.pop(key)
+                    filter_dict[key.replace(" ", "").upper()] = filter_dict.pop(key)
 
         # Filter data
         if filter_type == "include":
@@ -387,10 +473,10 @@ class HydamoObject:
             index = attr["name"]
             self.attr_dtype[index] = self._interpret_dtype(attr["type"])
             self.attr_required[index] = attr["required"]
-            if attr['src_col']:
-                self.attr_damo[index] = attr['src_col']
-            if attr['default']:
-                self.attr_dummy[index] = attr['default']
+            if attr["src_col"]:
+                self.attr_damo[index] = attr["src_col"]
+            if attr["default"]:
+                self.attr_dummy[index] = attr["default"]
 
     def _interpret_dtype(self, input_dtype: str):
         """
@@ -411,11 +497,11 @@ class HydamoObject:
         """
         Remove all the columns of the dataframe except the geometry
         """
-        gdf = gdf[['geometry']].copy()
+        gdf = gdf[["geometry"]].copy()
 
         # Raise error if geodataframe has no rows
         if len(gdf) == 0:
-            logging.error(f'geodataframe {self.objectname} is empty. Check your input.')
+            logging.error(f"geodataframe {self.objectname} is empty. Check your input.")
 
         return gdf
 
@@ -448,27 +534,34 @@ class HydamoObject:
         """
         merge multiline to line
         """
-        self.gdf['geometry'] = self.gdf['geometry'].apply(
-            lambda x: ops.linemerge(x) if x.geom_type == 'MultiLineString' else x)
+        self.gdf["geometry"] = self.gdf["geometry"].apply(
+            lambda x: ops.linemerge(x) if x.geom_type == "MultiLineString" else x
+        )
 
     def _multipoint_to_point(self):
         """
         Convert multipoint geometry to point geometry
         """
-        self.gdf['geometry'] = self.gdf['geometry'].apply(lambda x: x[0] if x.geom_type == "MultiPoint" else x)
+        self.gdf["geometry"] = self.gdf["geometry"].apply(
+            lambda x: x[0] if x.geom_type == "MultiPoint" else x
+        )
 
     def _fill_na_if_required(self, attr, tmp_attr):
         """Fill NA values if attribute is required"""
         if self.attr_required[attr]:
             empty_attr = tmp_attr[tmp_attr[attr].isna()]
-            logging.info(f'Default waarde van {attr} ({self.attr_dummy[attr]}) aangenomen voor: '
-                         f'{list(empty_attr.index)}')
-            if len(empty_attr)>0:
+            logging.info(
+                f"Default waarde van {attr} ({self.attr_dummy[attr]}) aangenomen voor: "
+                f"{list(empty_attr.index)}"
+            )
+            if len(empty_attr) > 0:
                 self.fill_na[attr] = list(empty_attr.index)
-            tmp_attr[attr] = tmp_attr[attr].apply(lambda x: self.attr_dummy[attr] if pd.isnull(x) else x)
+            tmp_attr[attr] = tmp_attr[attr].apply(
+                lambda x: self.attr_dummy[attr] if pd.isnull(x) else x
+            )
         else:
-    #       tmp_attr = tmp_attr[tmp_attr[attr].notna()]
-            tmp_attr[attr].fillna(value=-999,inplace=True)
+            #       tmp_attr = tmp_attr[tmp_attr[attr].notna()]
+            tmp_attr[attr].fillna(value=-999, inplace=True)
         return tmp_attr
 
     def _set_datatype(self, attr, tmp_attr):
@@ -477,7 +570,7 @@ class HydamoObject:
         if self.attr_dtype[attr] is np.int64:
             # int dtype can't handle NaN values, therefore converted to string
             to_int = tmp_attr.astype(self.attr_dtype[attr])
-            return to_int.astype('object')
+            return to_int.astype("object")
         else:
             return tmp_attr.astype(self.attr_dtype[attr])
 
@@ -485,7 +578,7 @@ class HydamoObject:
     def output_folder(self):
         """Make dir is not exist"""
         if self._outputfolder is None:
-            folder = os.path.join('log', datetime.today().strftime("%Y%m%d_%H%M"))
+            folder = os.path.join("log", datetime.today().strftime("%Y%m%d_%H%M"))
             os.makedirs(folder)
             self._outputfolder = folder
         return self._outputfolder
@@ -506,5 +599,5 @@ class HydamoObject:
     #     return fc_dataframe
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass
