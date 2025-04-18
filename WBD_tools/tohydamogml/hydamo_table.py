@@ -334,7 +334,6 @@ class HydamoObject:
         :param mask: shapely polygon. Only the features that intersect the polygon will be loaded
         :return: geodataframe
         """
-        print(layer)
         if (
             os.path.splitext(filegdb)[1] == ".gdb"
         ):  # If the database is a file geodatabase
