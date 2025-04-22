@@ -17,6 +17,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from shapely import LineString, distance
 ### /import
 
 class PROCESS_CULVERTS:
@@ -40,6 +41,7 @@ class PROCESS_CULVERTS:
 
             profile_data = gpd.read_file(os.path.join(self.root_dir,"Profiles",dijkring,"profielpunt.gpkg"))
             network_data = gpd.read_file(os.path.join(self.root_dir, "Network",dijkring,'hydroobject.gpkg'))
+            network_sindex = network_data.sindex
             raw_data = gpd.read_file(os.path.join(path_shape,"duikersifonhevel.gpkg"))
             raw_data['globalid']=raw_data['code']
             print('start intersction culverts')
@@ -79,7 +81,16 @@ class PROCESS_CULVERTS:
                         raw_data.loc[index,'breedteopening']=raw_data.loc[index,'hoogteopening']
                             
                     raw_data.loc[index,'commentbreedteopening']= 'breedteopening aangevuld'   
-                    
+
+                # Check whether start and end of culvert have differing distances to the hydroobject
+                culvert_start = row.geometry.boundary.geoms[0] # isolating start locatien of current culvert
+                culvert_end = row.geometry.boundary.geoms[1] # isolating end location of current culvert
+                hydroobject_index = network_sindex.nearest(row.geometry) # finding hydroobject nearest to current culvert
+                nearest_hydroobject = network_data.iloc[hydroobject_index[1][0]].geometry # converting to linestring
+                distance_start = distance(culvert_start,nearest_hydroobject)
+                distance_end = distance(culvert_end,nearest_hydroobject)
+                if abs(distance_start - distance_end) > row.geometry.length/2: # if the culvert direction differs more than 30 degrees from the hydroobject direction
+                    drop = True # remove current culvert                    
 
                 if row['hoogtebinnenonderkantbene']<-10 or row['hoogtebinnenonderkantbene']>40:
                     if row['hoogtebinnenonderkantbov']<-10 or row['hoogtebinnenonderkantbov']>40:
