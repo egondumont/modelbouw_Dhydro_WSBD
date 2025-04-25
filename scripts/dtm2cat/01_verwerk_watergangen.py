@@ -15,7 +15,6 @@ fnames = dict()
 fnames["objecten"] = DATA_DIR / "objecten"
 fnames["mask"] = DATA_DIR.joinpath("masks", "Aa_of_Weerijs_buffer.shp")
 fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
-fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
 fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
 
 # %%

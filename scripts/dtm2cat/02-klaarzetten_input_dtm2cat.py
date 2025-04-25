@@ -25,6 +25,7 @@ fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
 fnames["ahn_05m"] = DATA_DIR.joinpath(
     r"hoogtekaart", "5m_AHN3_NL", "ahn3_5m_dtm_BD_filled.tif"
 )
+fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
 fnames["clusters"] = DATA_DIR.joinpath(
     "clusters", "afwateringsgebieden_25m_15clusters_fixed.shp"
 )
@@ -35,7 +36,7 @@ fnames["process_dir"] = OUT_DIR.joinpath("clusters")
 # %%
 
 # processen clusters
-CLUSTERS = [13]
+CLUSTERS = [6, 12, 13]
 
 dfs = dict()
 dfs["clusters"] = gpd.read_file(fnames["clusters"]).set_index("CLUSTER_ID", drop=False)
@@ -46,11 +47,20 @@ dfs["waterlopen"] = gpd.read_file(
     engine="pyogrio",
 )
 dfs["waterlopen"].loc[:, "dtm2catId"] = dfs["waterlopen"].index
-clusters = dfs["clusters"].index
+dfs["waterlopen"].loc[:, "burn_depth"] = 1000
 
+dfs["b_waterlopen"] = gpd.read_file(
+    fnames["b_waterlopen"],
+    engine="pyogrio",
+)
+dfs["b_waterlopen"].loc[:, "burn_depth"] = 500
+
+clusters = dfs["clusters"].index
 # limiteren clusters tot CLUSTERS
 if CLUSTERS:
     clusters = [i for i in clusters if i in CLUSTERS]
+
+
 for cluster in clusters:
     logger.info(f"starten met cluster {cluster}")
 
@@ -79,9 +89,6 @@ for cluster in clusters:
         # reken hoogtedata om naar integers
         ahn_raster = ahn_clipped * 100
         ahn_raster = ahn_raster.astype(int)
-        ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
-        ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
-        ahn_raster_nan.rio.to_raster(cluster_dir.joinpath("hoogtekaart_interp.asc"))
 
     # clip waterlopen op basis van clustergrens
     logger.info(f"aanmaken waterlopen-raster")
@@ -93,7 +100,7 @@ for cluster in clusters:
     waterlopen = make_geocube(
         waterlopen_clipped_gdf,
         measurements=["dtm2catId"],
-        like=ahn_raster_nan,
+        like=ahn_raster,
         fill=0,
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
@@ -101,6 +108,35 @@ for cluster in clusters:
     waterlopen.rio.to_raster(
         cluster_dir.joinpath("waterlopen_verrasterd_dtm2catID.asc")
     )
+
+    # branden van a-waterlopen in hoogtekaart
+    burn_layer = make_geocube(
+        waterlopen_clipped_gdf,
+        measurements=["burn_depth"],
+        like=ahn_raster,
+        fill=0,
+        rasterize_function=partial(rasterize_image, all_touched=False),
+    )
+
+    ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
+
+    # branden van b-waterlopen in hoogtekaart
+    b_waterlopen_clipped_gdf = gpd.clip(
+        dfs["b_waterlopen"], dfs["clusters"].at[cluster, "geometry"]
+    )
+
+    burn_layer = make_geocube(
+        b_waterlopen_clipped_gdf,
+        measurements=["burn_depth"],
+        like=ahn_raster,
+        fill=0,
+        rasterize_function=partial(rasterize_image, all_touched=False),
+    )
+
+    ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
+    ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
+    ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
+    ahn_raster_nan.rio.to_raster(cluster_dir.joinpath("hoogtekaart_interp.asc"))
 
     # maak raster met peilvakken met waarde CLUSTER_ID en schrijf weg zodat clustergrenzen worden gebruikt als peilgebiedsgrens
     logger.info(f"aanmaken peilvak-raster")
