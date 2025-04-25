@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dtm2cat"
+description = "functies voor het bepalen van afvoergebieden op basis van waterlopen"
+readme = "README.md"
+authors = [
+    { name = "Emma Poppelier", email = "e.poppelier@brabantsedelta.nl" },
+    { name = "Daniel Tollenaar", email = "daniel@d2hydro.nl" },
+    
+]
+license = { text = "MIT" }
+
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas",
+	"momepy",
+    "contextily",
+    "rioxarray",
+    "geocube",
+    "ipykernel",
+    "dask",
+    "networkx"
+]
+
+
+
+dynamic = ["version"]
+
+[tool.hatch.version]
+path = "dtm2cat/__init__.py"
+
+[project.urls]
+Source = "https://github.com/egondumont/modelbouw_Dhydro_WSBD/tree/master/WBD_tools/dtm2cat"
