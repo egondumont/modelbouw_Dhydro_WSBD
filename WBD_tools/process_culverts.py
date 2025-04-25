@@ -16,8 +16,7 @@ import os
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-from datetime import datetime
-from shapely import LineString, distance
+from shapely import distance
 ### /import
 
 class PROCESS_CULVERTS:
