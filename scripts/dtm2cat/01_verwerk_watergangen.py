@@ -7,17 +7,16 @@ from dtm2cat.lines import split_lines_to_points, get_line_connections
 
 # %%
 # specificatie bestanden
-DATA_DIR = Path(r"d:\projecten\D2508.WBD_modelinstrumentarium\02.DTM2CAT\dtm2cat\data")
+DTM2CAT_DIR = Path(r"d:\projecten\D2508.WBD_modelinstrumentarium\02.DTM2CAT\dtm2cat")
+DATA_DIR = DTM2CAT_DIR / "data"
+OUT_DIR = DTM2CAT_DIR / "out"
 
 fnames = dict()
-fnames["data_dir"] = DATA_DIR
 fnames["objecten"] = DATA_DIR / "objecten"
 fnames["mask"] = DATA_DIR.joinpath("masks", "Aa_of_Weerijs_buffer.shp")
 fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
 fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
-fnames["waterlopen_verwerkt"] = DATA_DIR.joinpath(
-    "afwateringseenheden", "waterlopen_verwerkt.gpkg"
-)
+fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
 
 # %%
 # Init dfs en lees mask
@@ -33,7 +32,6 @@ bbox = None
 
 # %%
 # inlezen objecten
-import pandas as pd
 
 # inlezen shapes uit objecten-dir
 dfs["objecten"] = read_objects(
