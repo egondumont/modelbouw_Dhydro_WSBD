@@ -36,6 +36,7 @@ fnames["process_dir"] = OUT_DIR.joinpath("clusters")
 
 # processen clusters
 CLUSTERS = [6, 12, 13]
+CLUSTERS = None
 
 dfs = dict()
 dfs["clusters"] = gpd.read_file(fnames["clusters"]).set_index("CLUSTER_ID", drop=False)
@@ -186,7 +187,7 @@ for cluster in clusters:
     copy_binaries(path=cluster_dir)
 
     # bereken
-    logger.info(f"bereken subcatchments")
+    logger.info(f"bereken afwateringseenheden")
     fnames["afwateringseenheden"] = cluster_dir.joinpath("afwateringseenheden.gpkg")
     calculate_subcatchments(
         elevation_raster=fnames["hoogteraster"],
@@ -197,3 +198,14 @@ for cluster in clusters:
         crs=28992,
         report_maps=False,
     )
+
+logger.info("samenvoegen afwateringseenheden")
+gdf = pd.concat(
+    [
+        gpd.read_file(i)
+        for i in fnames["process_dir"].glob("*/afwateringseenheden.gpkg")
+    ],
+    ignore_index=True,
+)
+
+gdf.to_file(fnames["waterlopen_verwerkt"].with_name("afwateringseenheden.gpkg"))
