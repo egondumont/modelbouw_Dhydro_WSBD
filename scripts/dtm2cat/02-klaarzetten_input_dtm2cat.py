@@ -7,8 +7,7 @@ from geocube.api.core import make_geocube
 from functools import partial
 from geocube.rasterize import rasterize_image
 from pathlib import Path
-from dtm2cat import get_logger
-from dtm2cat import copy_binaries
+from dtm2cat import get_logger, copy_binaries, calculate_subcatchments
 
 
 logger = get_logger()
@@ -105,9 +104,10 @@ for cluster in clusters:
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
 
-    waterlopen.rio.to_raster(
-        cluster_dir.joinpath("waterlopen_verrasterd_dtm2catID.asc")
+    fnames["waterlopen_raster"] = cluster_dir.joinpath(
+        "waterlopen_verrasterd_dtm2catID.asc"
     )
+    waterlopen.rio.to_raster(fnames["waterlopen_raster"])
 
     # branden van a-waterlopen in hoogtekaart
     burn_layer = make_geocube(
@@ -136,7 +136,8 @@ for cluster in clusters:
     ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
     ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
     ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
-    ahn_raster_nan.rio.to_raster(cluster_dir.joinpath("hoogtekaart_interp.asc"))
+    fnames["hoogteraster"] = cluster_dir.joinpath("hoogtekaart_interp.asc")
+    ahn_raster_nan.rio.to_raster(fnames["hoogteraster"])
 
     # maak raster met peilvakken met waarde CLUSTER_ID en schrijf weg zodat clustergrenzen worden gebruikt als peilgebiedsgrens
     logger.info(f"aanmaken peilvak-raster")
@@ -152,7 +153,8 @@ for cluster in clusters:
     peilvak = peilvak.where(peilvak != cluster, 1)
 
     # schrijf peilvakken mask weg naar raster (.asc)
-    peilvak.rio.to_raster(cluster_dir.joinpath("peilvakken.asc"))
+    fnames["peilvakken_raster"] = cluster_dir.joinpath("peilvakken.asc")
+    peilvak.rio.to_raster(fnames["peilvakken_raster"])
 
     # schrijven van CSV's voor de interne administratie van DTM2Cat
 
@@ -182,3 +184,16 @@ for cluster in clusters:
 
     logger.info(f"wegschrijven binaries")
     copy_binaries(path=cluster_dir)
+
+    # bereken
+    logger.info(f"bereken subcatchments")
+    fnames["afwateringseenheden"] = cluster_dir.joinpath("afwateringseenheden.gpkg")
+    calculate_subcatchments(
+        elevation_raster=fnames["hoogteraster"],
+        water_segments_raster=fnames["waterlopen_raster"],
+        areas_raster=fnames["peilvakken_raster"],
+        subatchments_gpkg=fnames["afwateringseenheden"],
+        max_fill_depth=250,
+        crs=28992,
+        report_maps=False,
+    )
