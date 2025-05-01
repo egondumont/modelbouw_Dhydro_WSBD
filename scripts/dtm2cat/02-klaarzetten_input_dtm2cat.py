@@ -33,9 +33,9 @@ fnames["process_dir"] = OUT_DIR.joinpath("clusters")
 
 
 # %%
-
+MAX_FILL_DEPTH = 5000
 # processen clusters
-CLUSTERS = [6, 12, 13]
+CLUSTERS = [13]
 CLUSTERS = None
 
 dfs = dict()
@@ -47,13 +47,14 @@ dfs["waterlopen"] = gpd.read_file(
     engine="pyogrio",
 )
 dfs["waterlopen"].loc[:, "dtm2catId"] = dfs["waterlopen"].index
-dfs["waterlopen"].loc[:, "burn_depth"] = 1000
+dfs["waterlopen"].loc[:, "burn_depth"] = MAX_FILL_DEPTH * 4
 
 dfs["b_waterlopen"] = gpd.read_file(
-    fnames["b_waterlopen"],
+    fnames["waterlopen_verwerkt"],
+    layer="b_waterlopen",
     engine="pyogrio",
 )
-dfs["b_waterlopen"].loc[:, "burn_depth"] = 500
+dfs["b_waterlopen"].loc[:, "burn_depth"] = MAX_FILL_DEPTH * 2
 
 clusters = dfs["clusters"].index
 # limiteren clusters tot CLUSTERS
@@ -194,7 +195,7 @@ for cluster in clusters:
         water_segments_raster=fnames["waterlopen_raster"],
         areas_raster=fnames["peilvakken_raster"],
         subatchments_gpkg=fnames["afwateringseenheden"],
-        max_fill_depth=250,
+        max_fill_depth=MAX_FILL_DEPTH,
         crs=28992,
         report_maps=False,
     )

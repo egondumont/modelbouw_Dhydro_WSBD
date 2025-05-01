@@ -2,8 +2,15 @@
 import geopandas as gpd
 from pathlib import Path
 from dtm2cat.objects import read_objects, remove_duplicated_objects
-from dtm2cat.lines import split_lines_to_points, get_line_connections
+from dtm2cat.lines import (
+    split_lines_to_points,
+    get_line_connections,
+    connecting_secondary_lines,
+)
+from dtm2cat import get_logger
 
+
+logger = get_logger()
 
 # %%
 # specificatie bestanden
@@ -15,6 +22,7 @@ fnames = dict()
 fnames["objecten"] = DATA_DIR / "objecten"
 fnames["mask"] = DATA_DIR.joinpath("masks", "Aa_of_Weerijs_buffer.shp")
 fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
+fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
 fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
 
 # %%
@@ -31,6 +39,7 @@ bbox = None
 
 # %%
 # inlezen objecten
+logger.info("verwerken objecten")
 
 # inlezen shapes uit objecten-dir
 dfs["objecten"] = read_objects(
@@ -48,7 +57,7 @@ dfs["objecten"] = remove_duplicated_objects(
 
 # %%
 # opknippen A-waterlopen
-
+logger.info("opknippen a-waterlopen")
 TOLERANCE = 5  # tolerantie waarbinnen objecten naar een waterloop worden gesnapt
 MAX_LENGTH = 500  # maximale lengte van een waterloopsegment
 
@@ -73,14 +82,29 @@ dfs["waterloopsegmenten"] = split_lines_to_points(
 # %%
 # bepalen connectiepunten
 
+logger.info("bepalen connectiepunten")
+
 dfs["connecties"] = get_line_connections(
     lines_gdf=dfs["waterloopsegmenten"], points_gdf=dfs["objecten"], tolerance=5
 )
 
+# bepalen verbonden b_waterlopen
+logger.info("vinden verbonden b-waterlopen")
+
+dfs["b_waterlopen"] = gpd.read_file(
+    fnames["b_waterlopen"], engine="pyogrio", bbox=bbox
+)[["Code_objec", "geometry"]]
+
+
+dfs["b_waterlopen"] = connecting_secondary_lines(
+    lines_gdf=dfs["a_waterlopen"], secondary_lines_gdf=dfs["b_waterlopen"], tolerance=1
+)
+
+
 # %%
 # Resultaten wegschrijven als lagen in GeoPackage
-
-WRITE_LAYERS = ["objecten", "waterloopsegmenten", "connecties"]
+logger.info("wegschrijven resultaten")
+WRITE_LAYERS = ["objecten", "waterloopsegmenten", "connecties", "b_waterlopen"]
 
 for layer in WRITE_LAYERS:
     if layer in dfs.keys():

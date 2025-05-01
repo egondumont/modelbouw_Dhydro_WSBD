@@ -7,7 +7,9 @@ from shapely.ops import substring
 import numpy as np
 
 
-def snap_point_to_line(point: Point, line: LineString, tolerance: float = 5) -> Point:
+def snap_point_to_line(
+    point: Point, line: LineString, tolerance: float | None = 5
+) -> Point:
     """Snap a Point to a LineString within tolerance
 
     Args:
@@ -20,9 +22,10 @@ def snap_point_to_line(point: Point, line: LineString, tolerance: float = 5) -> 
     """
     projected = line.project(point)
     snapped_point = line.interpolate(projected)
-    if snapped_point.distance(point) <= tolerance:
-        return snapped_point
-    return None
+    if tolerance:
+        if snapped_point.distance(point) <= tolerance:
+            snapped_point = None
+    return snapped_point
 
 
 def split_line_by_length(line: LineString, max_length: float = 500) -> list[LineString]:
@@ -174,34 +177,46 @@ def get_line_connections(
         end_pt = row.end_point
         # Find segments whose start matches this segment's end
         candidates = start_tree.query(end_pt)
-        for candidate in candidates:
-            if end_pt.distance(lines_gdf.loc[candidate, "start_point"]) <= tolerance:
-                row_dict = {
-                    "from_line_fid": row.line_fid,
-                    "to_line_fid": lines_gdf.at[candidate, "line_fid"],
-                    "geometry": end_pt,
-                }
+        candidates = [
+            i
+            for i in candidates
+            if end_pt.distance(lines_gdf.at[i, "start_point"]) <= tolerance
+        ]
+        if candidates:
+            for candidate in candidates:
+                if end_pt.distance(lines_gdf.at[candidate, "start_point"]) <= tolerance:
+                    row_dict = {
+                        "from_line_fid": row.line_fid,
+                        "to_line_fid": lines_gdf.at[candidate, "line_fid"],
+                        "geometry": end_pt,
+                    }
 
-            # find point candidates
-            point_idx = [
-                i
-                for i in points_tree.query(end_pt)
-                if points_gdf.at[i, "geometry"].distance(end_pt) <= tolerance
-            ]
-            if len(point_idx) > 1:
-                raise ValueError(
-                    f"for line fid {row.line_fid} two we find two points with fids {point_idx}"
-                )
-            elif len(point_idx) == 1:
-                row_dict = {
-                    **row_dict,
-                    **{
-                        k: v
-                        for k, v in points_gdf.loc[point_idx[0]].items()
-                        if k != "geometry"
-                    },
-                }
-
+                # find point candidates
+                point_idx = [
+                    i
+                    for i in points_tree.query(end_pt)
+                    if points_gdf.at[i, "geometry"].distance(end_pt) <= tolerance
+                ]
+                if len(point_idx) > 1:
+                    raise ValueError(
+                        f"for line fid {row.line_fid} two we find two points with fids {point_idx}"
+                    )
+                elif len(point_idx) == 1:
+                    row_dict = {
+                        **row_dict,
+                        **{
+                            k: v
+                            for k, v in points_gdf.loc[point_idx[0]].items()
+                            if k != "geometry"
+                        },
+                    }
+                data += [row_dict]
+        else:
+            row_dict = {
+                "from_line_fid": row.line_fid,
+                "to_line_fid": None,
+                "geometry": end_pt,
+            }
             data += [row_dict]
 
     return gpd.GeoDataFrame(
@@ -219,12 +234,12 @@ def _select_indices(line, remaining, tolerance):
     return close.index.to_numpy()
 
 
-def expand_with_secondary_lines(
+def connecting_secondary_lines(
     lines_gdf: gpd.GeoDataFrame,
     secondary_lines_gdf: gpd.GeoDataFrame,
     tolerance: float = 1,
 ) -> gpd.GeoDataFrame:
-    """Expand a lines_gdf GeoDataFrame with lines from secondary_lines_gdf
+    """Select all secondary lines that are connected via other lines to lines_gdf
 
     Args:
         lines_gdf (gpd.GeoDataFrame): GeoDataFrame with lines
@@ -232,7 +247,7 @@ def expand_with_secondary_lines(
         tolerance (float, optional): tolerance to find line-connections from secondary_lines. Defaults to 1.
 
     Returns:
-        gpd.GeoDataFrame: Expansion of lines_gdf with lines from secondary_lines_gdf
+        gpd.GeoDataFrame: Selection of secondary_lines_gdf
     """
     remaining = secondary_lines_gdf.copy()
     if not remaining.crs.equals(lines_gdf.crs):
@@ -241,7 +256,7 @@ def expand_with_secondary_lines(
     lines_gdf = lines_gdf.copy()
     lines_gdf.loc[:, "line_fid"] = lines_gdf.index
 
-    selections = [lines_gdf]
+    selections = []
 
     for line_row in lines_gdf.itertuples():
         if remaining.empty:
