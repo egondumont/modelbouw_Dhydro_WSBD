@@ -18,3 +18,17 @@ If you want to learn more about creating good readme files then refer the follow
 - [ASP.NET Core](https://github.com/aspnet/Home)
 - [Visual Studio Code](https://github.com/Microsoft/vscode)
 - [Chakra Core](https://github.com/Microsoft/ChakraCore)
+
+
+# Installatie
+Maak de environment aan op basis van `environment_wbd.yml` met:
+
+```
+conda env create -f environment_wbd.yml
+```
+
+Vervolgens installeer je dtm2cat vanuit de subfolder `./WBD_tools/dtm2cat` met:
+
+```
+pip install -e .
+```
