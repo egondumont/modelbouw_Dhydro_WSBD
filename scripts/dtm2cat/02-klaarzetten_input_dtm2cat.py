@@ -63,6 +63,7 @@ for cluster in clusters:
     with rxr.open_rasterio(
         fnames["ahn"], mask_and_scale=True, chunks=True
     ) as ahn_raster_interp:
+        ahn_raster_interp = ahn_raster_interp.rio.write_crs("EPSG:28992", inplace=True)
         ahn_clipped = ahn_raster_interp.rio.clip(
             cluster_select_df.geometry,
             cluster_select_df.crs,
@@ -194,3 +195,5 @@ gdf = pd.concat(
 )
 
 gdf.to_file(fnames["waterlopen_verwerkt"].with_name("afwateringseenheden.gpkg"))
+
+# %%
