@@ -7,36 +7,20 @@ from geocube.api.core import make_geocube
 from functools import partial
 from geocube.rasterize import rasterize_image
 from pathlib import Path
-from dtm2cat import get_logger, copy_binaries, calculate_subcatchments
+from dtm2cat import get_logger, copy_binaries, calculate_subcatchments, get_fnames
 
 
 logger = get_logger()
 
 # %%
 # specificatie bestanden
-DTM2CAT_DIR = Path(r"d:\projecten\D2508.WBD_modelinstrumentarium\02.DTM2CAT\dtm2cat")
-DATA_DIR = DTM2CAT_DIR / "data"
-OUT_DIR = DTM2CAT_DIR / "out"
-
-
-fnames = dict()
-fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
-fnames["ahn_05m"] = DATA_DIR.joinpath(
-    r"hoogtekaart", "5m_AHN3_NL", "ahn3_5m_dtm_BD_filled.tif"
-)
-fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
-fnames["clusters"] = DATA_DIR.joinpath(
-    "clusters", "afwateringsgebieden_25m_15clusters_fixed.shp"
-)
-
-fnames["process_dir"] = OUT_DIR.joinpath("clusters")
+fnames = get_fnames()
 
 
 # %%
 MAX_FILL_DEPTH = 5000
 # processen clusters
-CLUSTERS = [13]
-CLUSTERS = None
+CLUSTERS = []  # geef hier specifieke clusters op als je niet het hele waterschap wilt draaien
 
 dfs = dict()
 dfs["clusters"] = gpd.read_file(fnames["clusters"]).set_index("CLUSTER_ID", drop=False)
@@ -77,7 +61,7 @@ for cluster in clusters:
     # clip hoogteraster met clustergrens
     logger.info(f"aanmaken hoogteraster")
     with rxr.open_rasterio(
-        fnames["ahn_05m"], mask_and_scale=True, chunks=True
+        fnames["ahn"], mask_and_scale=True, chunks=True
     ) as ahn_raster_interp:
         ahn_clipped = ahn_raster_interp.rio.clip(
             cluster_select_df.geometry,

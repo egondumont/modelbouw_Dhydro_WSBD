@@ -1,31 +1,13 @@
 # %%
-from dtm2cat import get_logger
-from pathlib import Path
+from dtm2cat import get_logger, get_fnames
 import pandas as pd
 import geopandas as gpd
 from dtm2cat.lines import snap_point_to_line
 
-DTM2CAT_DIR = Path(r"d:\projecten\D2508.WBD_modelinstrumentarium\02.DTM2CAT\dtm2cat")
-DATA_DIR = DTM2CAT_DIR / "data"
-OUT_DIR = DTM2CAT_DIR / "out"
-
 logger = get_logger()
 
 # %% filenames
-fnames = dict()
-fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
-fnames["ahn_05m"] = DATA_DIR.joinpath(
-    r"hoogtekaart", "5m_AHN3_NL", "ahn3_5m_dtm_BD_filled.tif"
-)
-fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
-fnames["clusters"] = DATA_DIR.joinpath(
-    "clusters", "afwateringsgebieden_25m_15clusters_fixed.shp"
-)
-
-fnames["process_dir"] = OUT_DIR.joinpath("clusters")
-fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
-fnames["afwateringseenheden"] = OUT_DIR.joinpath("afwateringseenheden.gpkg")
-
+fnames = get_fnames()
 
 # %% samenvoegen afwateringseenheden
 dfs = dict()
