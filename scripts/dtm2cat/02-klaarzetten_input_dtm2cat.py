@@ -185,15 +185,5 @@ for cluster in clusters:
         report_maps=False,
     )
 
-logger.info("samenvoegen afwateringseenheden")
-gdf = pd.concat(
-    [
-        gpd.read_file(i)
-        for i in fnames["process_dir"].glob("*/afwateringseenheden.gpkg")
-    ],
-    ignore_index=True,
-)
-
-gdf.to_file(fnames["waterlopen_verwerkt"].with_name("afwateringseenheden.gpkg"))
 
 # %%

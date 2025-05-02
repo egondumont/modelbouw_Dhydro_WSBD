@@ -86,3 +86,5 @@ logger.info("wegschrijven resultaat")
 for layer in ["waterlopen", "lateralen", "afwateringseenheden"]:
     df = dfs[layer].reset_index()
     df[["code", "geometry"]].to_file(fnames["afwateringseenheden"], layer=layer)
+
+
