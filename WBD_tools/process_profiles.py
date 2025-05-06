@@ -24,7 +24,7 @@ class PROCESS_PROFILES:
     def run(self):
 
         for dijkring in self.dijkringen:
-            path_shape=os.path.join(self.root_dir,'brondata/',dijkring)
+            path_shape=os.path.join(self.root_dir,'brondata',dijkring)
             
             raw_data = gpd.read_file(os.path.join(path_shape,"profielpunt.gpkg"))
             raw_data['code']=raw_data['profiellijnid']

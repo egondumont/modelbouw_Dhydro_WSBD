@@ -11,6 +11,7 @@ import os
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+import logging
 from datetime import datetime
 ### /import
 
@@ -40,6 +41,7 @@ class PROCESS_CLOSING:
             raw_data['globalid']=raw_data['code']
             culvert_data = gpd.read_file(os.path.join(self.root_dir,"Culverts",dijkring,"duikersifonhevel.gpkg"))
             pump_data = gpd.read_file(os.path.join(self.root_dir,"Pumping",dijkring,"pomp.gpkg"))
+            logging.info(f"{dijkring} heeft {len(raw_data)} afsluitmiddelen.")
             for index,row in raw_data.iterrows():
                 drop=False
                 obj_buffer=row['geometry'].buffer(self.checkbuffer[0])
@@ -54,15 +56,18 @@ class PROCESS_CLOSING:
                     else:
                         if len(culvert_data['code'][obj_intersect])>0:
                             raw_data.loc[index,'duikersifonhevelid']= culvert_data['code'][obj_intersect].values[0]
+                            raw_data.loc[index,'comment']= f'duikersifonhevelID aangevuld (binnen {self.checkbuffer[1]} m)'
                         else:    
-                            raw_data.loc[index,'duikersifonhevelid']= pump_data['code'][obj_intersect_pump].values[0]
-                        raw_data.loc[index,'comment']= f'object aangevuld (binnen {self.checkbuffer[1]} m)'
+                            raw_data.loc[index,'gemaalid']= pump_data['code'][obj_intersect_pump].values[0]
+                            raw_data.loc[index,'comment']= f'gemaalID aangevuld (binnen {self.checkbuffer[1]} m)'
                 else:
                     if len(culvert_data['code'][obj_intersect])>0:
                         raw_data.loc[index,'duikersifonhevelid']= culvert_data['code'][obj_intersect].values[0]
+                        raw_data.loc[index,'comment']= f'duikersifonhevelID aangevuld (binnen {self.checkbuffer[0]} m)'
                     else:    
-                        raw_data.loc[index,'duikersifonhevelid']= pump_data['code'][obj_intersect_pump].values[0]
-                    raw_data.loc[index,'comment']= f'object aangevuld (binnen {self.checkbuffer[0]} m)'  
+                        raw_data.loc[index,'gemaalid']= pump_data['code'][obj_intersect_pump].values[0]
+                        raw_data.loc[index,'comment']= f'gemaalID aangevuld (binnen {self.checkbuffer[0]} m)'
                 if drop:
-                    raw_data.drop(index,inplace=True) 
+                    raw_data.drop(index,inplace=True)
+            logging.info(f"{len(raw_data)} afsluitmiddelen in {dijkring} zijn gekoppeld aan een duiker of gemaal.")
             raw_data.to_file(os.path.join(path_export,'afsluitmiddel.gpkg'), driver='GPKG')    
