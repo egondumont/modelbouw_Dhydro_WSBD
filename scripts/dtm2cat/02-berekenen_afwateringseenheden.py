@@ -71,6 +71,7 @@ for cluster in clusters:
     cluster_dir = fnames["process_dir"].joinpath(f"{cluster}")
     if cluster_dir.exists():
         shutil.rmtree(cluster_dir)
+    cluster_dir.mkdir(parents=True)
 
     # clip hoogteraster met clustergrens
     logger.info(f"aanmaken hoogteraster")
