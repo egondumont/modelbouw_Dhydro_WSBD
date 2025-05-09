@@ -73,11 +73,11 @@ def _stuw_regelbaarheid(current_name=None):
     """"
     Zoekt door TYPEREGELBAARHEID naar de naam van het stuwtype, geeft attribuut waarde uit DAMO
     """
-    if current_name not in TYPEREGELBAARHEID.values():
+    if current_name not in TYPEREGELBAARHEID.keys():
         return 99
     for i, name in TYPEREGELBAARHEID.items():
-        if name == current_name:
-            return i
+        if i == current_name:
+            return name
 
 
 def stuw_kruinbreedte(damo_gdf=None, obj=None, damo_kruinbreedte="KRUINBREEDTE", damo_doorstroombreedte="DOORSTROOMBREEDTE",
@@ -150,11 +150,11 @@ def _duikersifonhevel_vorm(current_vorm):
     """"
     Zoekt door VORMKOKER naar de naam van de vorm, geeft attribuut waarde uit DAMO
     """
-    if current_vorm not in VORMKOKER.values():
+    if current_vorm not in VORMKOKER.keys():
         return 99
     for i, vorm in VORMKOKER.items():
-        if vorm == current_vorm:
-            return i
+        if i == current_vorm:
+            return vorm
 
 
 def obj_soortmateriaal(damo_gdf=None, obj=None, damo_soortmateriaal="SOORTMATERIAAL"):

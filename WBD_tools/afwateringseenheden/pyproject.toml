@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "afwateringseenheden"
+description = "functies voor het bepalen van afvoergebieden op basis van waterlopen"
+readme = "README.md"
+authors = [
+    { name = "Emma Poppelier", email = "e.poppelier@brabantsedelta.nl" },
+    { name = "Daniel Tollenaar", email = "daniel@d2hydro.nl" },
+    
+]
+license = { text = "MIT" }
+
+requires-python = ">=3.10"
+dependencies = [
+    "geopandas",
+	"momepy",
+    "contextily",
+    "rioxarray",
+    "geocube",
+    "ipykernel",
+    "dask",
+    "networkx"
+]
+
+
+
+dynamic = ["version"]
+
+[tool.hatch.version]
+path = "afwateringseenheden/__init__.py"
+
+[project.urls]
+Source = "https://github.com/egondumont/modelbouw_Dhydro_WSBD/tree/master/WBD_tools/afwateringseenheden"
