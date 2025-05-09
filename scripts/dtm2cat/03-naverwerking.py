@@ -1,8 +1,8 @@
 # %%
-from dtm2cat import get_logger, get_fnames
+from afwateringseenheden import get_logger, get_fnames
 import pandas as pd
 import geopandas as gpd
-from dtm2cat.lines import snap_point_to_line
+from afwateringseenheden.lines import snap_point_to_line
 
 logger = get_logger()
 
@@ -86,5 +86,3 @@ logger.info("wegschrijven resultaat")
 for layer in ["waterlopen", "lateralen", "afwateringseenheden"]:
     df = dfs[layer].reset_index()
     df[["code", "geometry"]].to_file(fnames["afwateringseenheden"], layer=layer)
-
-

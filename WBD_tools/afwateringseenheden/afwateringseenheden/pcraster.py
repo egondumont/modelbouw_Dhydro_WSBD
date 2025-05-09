@@ -1,7 +1,7 @@
 import pcraster as pcr
 from pathlib import Path
 import rasterio
-from dtm2cat.rasters import vectorize_data
+from afwateringseenheden.rasters import vectorize_data
 import numpy as np
 
 

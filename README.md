@@ -27,7 +27,7 @@ Maak de environment aan op basis van `environment_wbd.yml` met:
 conda env create -f environment_wbd.yml
 ```
 
-Vervolgens installeer je dtm2cat vanuit de subfolder `./WBD_tools/dtm2cat` met:
+Vervolgens installeer je de module `afwateringseenheden` vanuit de subfolder `./WBD_tools/afwateringseenheden` met:
 
 ```
 pip install -e .

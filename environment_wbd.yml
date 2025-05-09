@@ -20,8 +20,8 @@ dependencies:
     - rasterstats==0.19.0
     - imod==0.16.0
     - pyogrio=0.7.2
-    # dtm2cat dependencies
-    - momepy
+    # dependencies voor afwateringseenheden
+    - momepy # TODO: kijken of we dit eruit kunnen halen
     - geopandas
     - rioxarray
     - geocube

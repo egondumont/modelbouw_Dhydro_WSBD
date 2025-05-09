@@ -46,22 +46,24 @@ def load_env_to_dict(env_file: Path | None = None):
     return env_dict
 
 
-def get_fnames(DTM2CAT_DIR: Path | None = None):
-    """Get fnames relative to DTM2CAT_DIR"""
+def get_fnames(AFWATERINGSEENHEDEN_DIR: Path | None = None):
+    """Get fnames relative to AFWATERINGSEENHEDEN_DIR"""
 
-    # specify DTM2CAT_DIR
-    if DTM2CAT_DIR is None:
+    # specify AFWATERINGSEENHEDEN_DIR
+    if AFWATERINGSEENHEDEN_DIR is None:
         env = load_env_to_dict()
-        if "DTM2CAT_DIR" not in env.keys():
-            raise ValueError(f"DTM2CAT_DIR not specified in {find_env_file()}")
+        if "AFWATERINGSEENHEDEN_DIR" not in env.keys():
+            raise ValueError(
+                f"AFWATERINGSEENHEDEN_DIR not specified in {find_env_file()}"
+            )
 
-        DTM2CAT_DIR = Path(env["DTM2CAT_DIR"])
+        AFWATERINGSEENHEDEN_DIR = Path(env["AFWATERINGSEENHEDEN_DIR"])
 
     # populate fnames
     fnames = dict()
 
     # all we read
-    DATA_DIR = DTM2CAT_DIR / "data"
+    DATA_DIR = AFWATERINGSEENHEDEN_DIR / "data"
     fnames["objecten"] = DATA_DIR / "objecten"
     fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
     fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
@@ -74,7 +76,7 @@ def get_fnames(DTM2CAT_DIR: Path | None = None):
     )
 
     # all we write
-    OUT_DIR = DTM2CAT_DIR / "out"
+    OUT_DIR = AFWATERINGSEENHEDEN_DIR / "out"
     fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
     fnames["afwateringseenheden"] = OUT_DIR.joinpath("afwateringseenheden.gpkg")
     fnames["process_dir"] = OUT_DIR.joinpath("clusters")

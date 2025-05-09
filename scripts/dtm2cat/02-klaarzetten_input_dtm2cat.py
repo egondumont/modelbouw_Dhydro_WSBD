@@ -7,7 +7,11 @@ from geocube.api.core import make_geocube
 from functools import partial
 from geocube.rasterize import rasterize_image
 from pathlib import Path
-from dtm2cat import get_logger, copy_binaries, calculate_subcatchments, get_fnames
+from afwateringseenheden import (
+    get_logger,
+    calculate_subcatchments,
+    get_fnames,
+)
 
 
 logger = get_logger()
@@ -30,7 +34,7 @@ dfs["waterlopen"] = gpd.read_file(
     fid_as_index=True,
     engine="pyogrio",
 )
-dfs["waterlopen"].loc[:, "dtm2catId"] = dfs["waterlopen"].index
+dfs["waterlopen"].loc[:, "GridId"] = dfs["waterlopen"].index
 dfs["waterlopen"].loc[:, "burn_depth"] = MAX_FILL_DEPTH * 4
 
 dfs["b_waterlopen"] = gpd.read_file(
@@ -85,14 +89,14 @@ for cluster in clusters:
     # creëer mask om ID van waterlopen in template raster te branden (verrasteren van waterlopen)
     waterlopen = make_geocube(
         waterlopen_clipped_gdf,
-        measurements=["dtm2catId"],
+        measurements=["GridId"],
         like=ahn_raster,
         fill=0,
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
 
     fnames["waterlopen_raster"] = cluster_dir.joinpath(
-        "waterlopen_verrasterd_dtm2catID.asc"
+        "waterlopen_verrasterd_GridId.asc"
     )
     waterlopen.rio.to_raster(fnames["waterlopen_raster"])
 
@@ -143,35 +147,6 @@ for cluster in clusters:
     fnames["peilvakken_raster"] = cluster_dir.joinpath("peilvakken.asc")
     peilvak.rio.to_raster(fnames["peilvakken_raster"])
 
-    # schrijven van CSV's voor de interne administratie van DTM2Cat
-
-    logger.info(f"wegschrijven CSVs")
-    # verkrijg lijst met ID's van watergangen
-    list_ids = waterlopen_clipped_gdf["dtm2catId"].values
-
-    # maak een DataFrame op basis van deze ID's
-    df_waterlopen = pd.DataFrame(data=list_ids, columns=[r"id"])
-    df_waterlopen["nr"] = list_ids
-    df_waterlopen["is"] = 1
-
-    # schrijf ID's weg naar processing map
-    df_waterlopen.to_csv(cluster_dir.joinpath("waterloop.csv"), index=False)
-
-    # gebruik voor nu een enkel peilvak voor het gehele cluster (id=1)
-    list_ids_peilvakken = [1]
-
-    # maak een DataFrame op basis van dit ID
-    df_peilvakken = pd.DataFrame(data=list_ids_peilvakken, columns=[r"id"])
-
-    # voeg kolom 'nr' toe
-    df_peilvakken["nr"] = list_ids_peilvakken
-
-    # schrijf peilvakken ID's weg naar processing directory
-    df_peilvakken.to_csv(cluster_dir.joinpath("peilvakken.csv"), index=False)
-
-    logger.info(f"wegschrijven binaries")
-    copy_binaries(path=cluster_dir)
-
     # bereken
     logger.info(f"bereken afwateringseenheden")
     fnames["afwateringseenheden"] = cluster_dir.joinpath("afwateringseenheden.gpkg")
@@ -184,6 +159,3 @@ for cluster in clusters:
         crs=28992,
         report_maps=False,
     )
-
-
-# %%

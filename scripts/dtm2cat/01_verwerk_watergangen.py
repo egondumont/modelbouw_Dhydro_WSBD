@@ -1,12 +1,12 @@
 # %%
 import geopandas as gpd
-from dtm2cat.objects import read_objects, remove_duplicated_objects
-from dtm2cat.lines import (
+from afwateringseenheden.objects import read_objects, remove_duplicated_objects
+from afwateringseenheden.lines import (
     split_lines_to_points,
     get_line_connections,
     connecting_secondary_lines,
 )
-from dtm2cat import get_logger, get_fnames
+from afwateringseenheden import get_logger, get_fnames
 
 
 logger = get_logger()

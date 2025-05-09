@@ -2,7 +2,7 @@ import logging
 
 
 def get_logger(level: str = "INFO"):
-    logger = logging.getLogger("dtm2cat")
+    logger = logging.getLogger("afwateringseenheden")
     logger.setLevel(getattr(logging, level))
     if not logger.handlers:
         handler = logging.StreamHandler()
