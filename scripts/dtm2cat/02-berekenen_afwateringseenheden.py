@@ -17,14 +17,25 @@ from afwateringseenheden import (
 logger = get_logger()
 
 # %%
-# specificatie bestanden
-fnames = get_fnames()
+# globals
 
+AHN_FILE = "dtm_2m_filled.tif"
+MAX_FILL_DEPTH = 5000
+CLUSTERS: list[int] = []
 
 # %%
-MAX_FILL_DEPTH = 5000
+
 # processen clusters
-CLUSTERS = []  # geef hier specifieke clusters op als je niet het hele waterschap wilt draaien
+# geef hier specifieke clusters op als je niet het hele waterschap wilt draaien
+fnames = get_fnames()
+
+# add ahn from fnames
+fnames["ahn_dir"]
+fnames["ahn"] = next((fnames["ahn_dir"].glob(f"**/{AHN_FILE}")), None)
+if not fnames["ahn"]:
+    raise FileNotFoundError(
+        f"{AHN_FILE} not found in any (sub directory of) {fnames['ahn']}"
+    )
 
 dfs = dict()
 dfs["clusters"] = gpd.read_file(fnames["clusters"]).set_index("CLUSTER_ID", drop=False)
@@ -60,7 +71,6 @@ for cluster in clusters:
     cluster_dir = fnames["process_dir"].joinpath(f"{cluster}")
     if cluster_dir.exists():
         shutil.rmtree(cluster_dir)
-    cluster_dir.joinpath("out").mkdir(parents=True)
 
     # clip hoogteraster met clustergrens
     logger.info(f"aanmaken hoogteraster")
@@ -96,7 +106,7 @@ for cluster in clusters:
     )
 
     fnames["waterlopen_raster"] = cluster_dir.joinpath(
-        "waterlopen_verrasterd_GridId.asc"
+        "waterlopen_verrasterd_GridId.tif"
     )
     waterlopen.rio.to_raster(fnames["waterlopen_raster"])
 
@@ -127,7 +137,7 @@ for cluster in clusters:
     ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
     ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
     ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
-    fnames["hoogteraster"] = cluster_dir.joinpath("hoogtekaart_interp.asc")
+    fnames["hoogteraster"] = cluster_dir.joinpath("hoogtekaart_interp.tif")
     ahn_raster_nan.rio.to_raster(fnames["hoogteraster"])
 
     # maak raster met peilvakken met waarde CLUSTER_ID en schrijf weg zodat clustergrenzen worden gebruikt als peilgebiedsgrens
@@ -144,7 +154,7 @@ for cluster in clusters:
     peilvak = peilvak.where(peilvak != cluster, 1)
 
     # schrijf peilvakken mask weg naar raster (.asc)
-    fnames["peilvakken_raster"] = cluster_dir.joinpath("peilvakken.asc")
+    fnames["peilvakken_raster"] = cluster_dir.joinpath("peilvakken.tif")
     peilvak.rio.to_raster(fnames["peilvakken_raster"])
 
     # bereken

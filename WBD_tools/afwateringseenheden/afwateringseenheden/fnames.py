@@ -68,9 +68,7 @@ def get_fnames(AFWATERINGSEENHEDEN_DIR: Path | None = None):
     fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
     fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
 
-    fnames["ahn"] = DATA_DIR.joinpath(
-        "hoogtekaart", "5m_AHN3_NL", "ahn3_5m_dtm_BD_filled.tif"
-    )
+    fnames["ahn_dir"] = DATA_DIR.joinpath("hoogtekaart")
     fnames["clusters"] = DATA_DIR.joinpath(
         "clusters", "afwateringsgebieden_25m_15clusters_fixed.shp"
     )
