@@ -66,17 +66,6 @@ class PROCESS_PROFILES:
                         
                         raw_data.loc[index,'commentz']= 'Decimaal punt ontbreekt in data dit gecorrigeerd (factor 10 lager)' 
 
-
-            path_export = os.path.join(self.root_dir, "Profiles",dijkring)
-            if not os.path.exists(path_export):
-                os.makedirs(path_export)
-
-            raw_data.set_crs(epsg=28992, inplace=True, allow_override=True)
-            if len(self.dijkringen) > 1:
-                raw_data.to_file(os.path.join(path_export,'profielpunt_' + dijkring + '.gpkg'), driver='GPKG')
-            else:
-                raw_data.to_file(os.path.join(path_export,'profielpunt.gpkg'), driver='GPKG')
-
             # remove hydroobjects for which process_profiles.run() could not assign a leggerprofile from a nearby hydroobject (happens if nearby hydroobject is not split at junction with current hydroobject)
             raw_data.dropna(subset=['Z',], inplace=True)
 
@@ -88,6 +77,16 @@ class PROCESS_PROFILES:
                 # indicatie in hydroobjects output which hydroobjects have corrected leggerprofiles
                 elif raw_data.loc[raw_data['profiellijnid']==code, 'commentz'].any():
                     network_data.loc[network_data['code']==code, 'commentprofiel'] = 'leggerprofiel aangevuld of gecorrigeerd'
+
+            path_export = os.path.join(self.root_dir, "Profiles",dijkring)
+            if not os.path.exists(path_export):
+                os.makedirs(path_export)
+
+            raw_data.set_crs(epsg=28992, inplace=True, allow_override=True)
+            if len(self.dijkringen) > 1:
+                raw_data.to_file(os.path.join(path_export,'profielpunt_' + dijkring + '.gpkg'), driver='GPKG')
+            else:
+                raw_data.to_file(os.path.join(path_export,'profielpunt.gpkg'), driver='GPKG')
 
             path_export = os.path.join(self.root_dir, "Network",dijkring)
             if not os.path.exists(path_export):
