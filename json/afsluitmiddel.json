@@ -4,7 +4,9 @@
         "type": "",
         "path": "d:\\repositories\\modelbouw_Dhydro_WSBD\\input\\acceptatiedatabase.gdb",
         "layer": "afsluitmiddel",
-		"filter": "",
+        "filter": {
+            "STATUSOBJECT": ["gerealiseerd"]
+        },
         "filter_type": "include",
         "query": ""
     },
@@ -33,19 +35,11 @@
     	},
         {
             "name": "statusobjectcode",
-            "type": "Integer",
+            "type": "String",
             "required": false,
             "src_col": "STATUSOBJECT",
             "func": "",
             "default": ""
-        },
-        {
-            "name": "duikersifonhevelid",
-            "type": "String",
-            "required": true,
-            "src_col": "code_closest",
-            "func": "",
-            "default": 99
         },
         {
             "name": "objectbegintijd",
@@ -127,7 +121,23 @@
             "func": "",
             "default": 1
         },
-                {
+        {
+            "name": "duikersifonhevelid",
+            "type": "String",
+            "required": false,
+            "src_col": "duikersifonhevelid",
+            "func": "",
+            "default": ""
+        },
+        {
+            "name": "gemaalid",
+            "type": "String",
+            "required": false,
+            "src_col": "gemaalid",
+            "func": "",
+            "default": ""
+        },
+        {
             "name": "administratiefgebied",
             "type": "String",
             "required": true,
