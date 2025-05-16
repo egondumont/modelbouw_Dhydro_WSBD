@@ -7,7 +7,7 @@ from geocube.api.core import make_geocube
 from functools import partial
 from geocube.rasterize import rasterize_image
 from pathlib import Path
-from afwateringseenheden import (
+from wbd_tools.afwateringseenheden import (
     get_logger,
     calculate_subcatchments,
     get_fnames,

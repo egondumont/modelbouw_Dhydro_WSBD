@@ -1,8 +1,8 @@
 # %%
-from afwateringseenheden import get_logger, get_fnames
+from wbd_tools.afwateringseenheden import get_logger, get_fnames
 import pandas as pd
 import geopandas as gpd
-from afwateringseenheden.lines import snap_point_to_line
+from wbd_tools.afwateringseenheden.lines import snap_point_to_line
 
 logger = get_logger()
 

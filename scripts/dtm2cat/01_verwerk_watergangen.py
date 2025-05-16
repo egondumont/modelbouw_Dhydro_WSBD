@@ -1,12 +1,12 @@
 # %%
 import geopandas as gpd
-from afwateringseenheden.objects import read_objects, remove_duplicated_objects
-from afwateringseenheden.lines import (
+from wbd_tools.afwateringseenheden.objects import read_objects, remove_duplicated_objects
+from wbd_tools.afwateringseenheden.lines import (
     split_lines_to_points,
     get_line_connections,
     connecting_secondary_lines,
 )
-from afwateringseenheden import get_logger, get_fnames
+from wbd_tools.afwateringseenheden import get_logger, get_fnames
 
 
 logger = get_logger()
