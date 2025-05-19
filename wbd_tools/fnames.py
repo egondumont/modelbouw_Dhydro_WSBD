@@ -45,25 +45,31 @@ def load_env_to_dict(env_file: Path | None = None):
                 raise ValueError(f"Line {idx + 1} is not valid : {line}")
     return env_dict
 
+#%%
+def get_fnames(AFWATERINGSEENHEDEN_DIR: Path | None = None, MODELLEN_DIR: Path | None = None, AHN_DIR: Path | None = None) -> dict[Path]:
+    """Get all fnames from """
+    fnames = {k.lower(): v for k,v in  locals().items()}
 
-def get_fnames(AFWATERINGSEENHEDEN_DIR: Path | None = None):
-    """Get fnames relative to AFWATERINGSEENHEDEN_DIR"""
+    env = None
+    for variable, value in fnames.items():
+        # if not specified we read it from .env
+        if value is None:
+            # load env
+            if env is None:
+                env = load_env_to_dict()
+            # raise ValueError if local is not in env
+            if variable.upper() not in env.keys():
+                raise ValueError(
+                    f"{variable.upper()} not specified as input nor in {find_env_file()}"
+                )
+            fnames[variable] = Path(env[variable.upper()])
+        else:
+            fnames[variable] = Path(value)
 
-    # specify AFWATERINGSEENHEDEN_DIR
-    if AFWATERINGSEENHEDEN_DIR is None:
-        env = load_env_to_dict()
-        if "AFWATERINGSEENHEDEN_DIR" not in env.keys():
-            raise ValueError(
-                f"AFWATERINGSEENHEDEN_DIR not specified in {find_env_file()}"
-            )
 
-        AFWATERINGSEENHEDEN_DIR = Path(env["AFWATERINGSEENHEDEN_DIR"])
 
-    # populate fnames
-    fnames = dict()
-
-    # all we read
-    DATA_DIR = AFWATERINGSEENHEDEN_DIR / "data"
+    # afwateringseenheden: all we read
+    DATA_DIR = fnames["afwateringseenheden_dir"]  / "data"
     fnames["objecten"] = DATA_DIR / "objecten"
     fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
     fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
@@ -75,10 +81,22 @@ def get_fnames(AFWATERINGSEENHEDEN_DIR: Path | None = None):
         "clusters", "afwateringsgebieden_25m_15clusters_fixed.shp"
     )
 
-    # all we write
-    OUT_DIR = AFWATERINGSEENHEDEN_DIR / "out"
+    # afwateringseenheden: all we write
+    OUT_DIR = fnames["afwateringseenheden_dir"] / "out"
     fnames["waterlopen_verwerkt"] = OUT_DIR.joinpath("waterlopen_verwerkt.gpkg")
     fnames["afwateringseenheden"] = OUT_DIR.joinpath("afwateringseenheden.gpkg")
     fnames["process_dir"] = OUT_DIR.joinpath("clusters")
 
+
+    # modellen: all we read
+    DATA_DIR = fnames["modellen_dir"]  / "data"
+    fnames["damo_gdb"] = DATA_DIR.joinpath("acceptatiedatabase.gdb")
+    fnames["modelgebieden_gpkg"] = DATA_DIR.joinpath("modelgebieden.gpkg")
+
+    # modellen: all we write
+    fnames["modellen_output"] = fnames["modellen_dir"]  / "output"
+
+
     return fnames
+
+# %%

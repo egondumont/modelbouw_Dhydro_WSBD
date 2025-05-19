@@ -4,7 +4,7 @@ Read esri filegdb and keep original objectid
 
 import fiona
 import geopandas as gpd
-from tohydamogml.config import COLNAME_OID
+from wbd_tools.tohydamogml.config import COLNAME_OID
 
 
 def read_filegdb(filegdb, layer):

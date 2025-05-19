@@ -3,84 +3,102 @@ Make sure the working directory is the folder where this file is located
 """
 
 import sys
+from pathlib import Path
 import os
 import logging
+from wbd_tools.tohydamogml.hydamo_table import HydamoObject
+import json
+import geopandas as gpd
+import shutil
 
-# import geopandas as gpd
-# from codecs import ignore_errors
-# from datetime import datetime
-# import json
-# import jsonschema
-# from jsonschema import validate
-# Relative path to root folder of script
-sys.path.append(r".")
-from tohydamogml.hydamo_table import HydamoObject
+JSON_DIR = Path(__file__).parent / "json"
+JSON_OBJECTS = [
+    {"json_file": "hydroobject.json"},
+    {"json_file": "stuw.json"},
+    {"json_file": "kunstwerkopening.json"},
+    {"json_file": "regelmiddel.json"},
+    {"json_file": "dwarsprofiel.json", "layer": "LEGGER_VASTGESTELD_WATERLOOP_CATEGORIE_A"},
+    {"json_file": "duikersifonhevel.json"},
+    {"json_file": "afsluitmiddel.json"},
+    {"json_file": "brug.json"},
+    {"json_file": "gemaal.json"},
+    {"json_file": "pomp.json"},
+    {"json_file": "sturing.json"},
+    {"json_file": "bodemval.json"},
+    {"json_file": "randvoorwaarden.json"},
+]
 
 
-class GETDATA:
-    def __init__(self, root_dir, data_dir, input_dir, shapefiles):
+def init_gdb(damo_gdb:Path, json_objects: dict = JSON_OBJECTS) -> Path:
+    """Checks if DAMO GeoDataBase exists and populates JSON dir
+
+    Returns:
+       Path: Path to json dir
+    """
+    # init layers, will return FileNotFound when damo_gdb does not exist
+    layers = gpd.list_layers(damo_gdb)
+    layers["lower_casing"] = layers.name.str.lower()
+
+    # init json-dir. Make if not existing
+    json_dst_dir = damo_gdb.parent.joinpath("json")
+    if not json_dst_dir.exists():
+        json_dst_dir.mkdir()
+    
+    # update and write filename and layer of jsons
+    for json_object in json_objects:
+
+        # define file paths
+        json_src_file = JSON_DIR.joinpath(json_object["json_file"])
+        json_dst_file = json_dst_dir.joinpath(json_object["json_file"])
+
+        # read json
+        if not json_dst_file.exists():
+            layer_specs = json.loads(json_src_file.read_text())
+        else:
+            layer_specs = json.loads(json_dst_file.read_text())
+
+        # update path if layer is in layers
+        if layer_specs["source"]["layer"].lower() in layers["lower_casing"].to_numpy():
+            layer_specs["source"]["layer"] = layers.set_index("lower_casing").at[layer_specs["source"]["layer"].lower(), "name"]
+            layer_specs["source"]["path"] = damo_gdb.as_posix()
+
+        # write json
+        json_dst_file.write_text(json.dumps(layer_specs, indent=1))
+
+    return json_dst_dir    
+
+
+class GetData:
+    def __init__(self, json_dir, output_dir, poly_mask):
         # path to json files
-        self.root_dir = root_dir
-        self.data_dir = data_dir
-        self.input_dir = input_dir
-        self.shapefiles = shapefiles
-        self.path_json = os.path.join(self.root_dir, r"json")
-
-        # Optional: filepath to a python file with attributes functions. In the json files is referred to these functions.
-        self.attr_function = os.path.join(self.path_json, "attribute_functions.py")
+        self.json_dir = json_dir
+        self.source_data_dir = output_dir / "brondata"
+        self.mask = poly_mask
 
     # Optional: select a part of the sourcedata by a shape
-    def run(self):
-        for shapefile in self.shapefiles:
-            mask = str(os.path.join(self.input_dir, shapefile + ".shp"))
-            # path to export gml files
-            export_path = os.path.join(self.data_dir, "brondata", shapefile)
-            if not os.path.exists(export_path):
-                os.makedirs(export_path)
+    def run(self, json_subset:list[str] | None = None):
 
-            # Make folder for logging
-            report_folder = os.path.join(export_path, "report")
-            if not os.path.exists(report_folder):
-                os.makedirs(report_folder)
+        # if not a selection of json-objects is specified, we look trough json_dir
+        if json_subset is not None:
+            json_objects = [self.json_dir.joinpath(i["json_file"]) for i in JSON_OBJECTS if Path(i["json_file"]).stem in json_subset]
+        else:
+            json_objects = [self.json_dir.joinpath(i["json_file"]) for i in JSON_OBJECTS]
 
-            # list with json objects to loop through
-            json_objects = [
-                os.path.join(self.path_json, "hydroobject.json"),
-                os.path.join(self.path_json, "stuw.json"),
-                os.path.join(self.path_json, "kunstwerkopening.json"),
-                os.path.join(self.path_json, "regelmiddel.json"),
-                os.path.join(self.path_json, "dwarsprofiel.json"),
-                os.path.join(self.path_json, "duikersifonhevel.json"),
-                os.path.join(self.path_json, "afsluitmiddel.json"),
-                # os.path.join(self.path_json, "brug.json"),
-                os.path.join(self.path_json, "gemaal.json"),
-                os.path.join(self.path_json, "pomp.json"),
-                # os.path.join(path_json, "sturing.json"),
-                # os.path.join(self.path_json, "bodemval.json"),
-                # os.path.join(self.path_json, "randvoorwaarden.json"),
-            ]
+        
+        if self.source_data_dir.exists():
+            shutil.rmtree(self.source_data_dir)
+        
+        report_dir = self.source_data_dir / "report"
+        report_dir.mkdir(parents=True)
 
-            # profile_objects = [os.path.join(path_json, "brug_dwp.json"), os.path.join(path_json, "profiel_legger.json")]
+        # write damo-object
+        for json_object in json_objects:
+            logging.info(f"Object path: {str(json_object)}")
+            obj = HydamoObject(
+                json_object,
+                mask=self.mask,
+                report_dir=report_dir,
+                print_gml=False,
+            )
 
-            for json_object in json_objects:
-                logging.info(f"Object path: {str(json_object)}")
-
-                if mask:
-                    obj = HydamoObject(
-                        json_object,
-                        mask=mask,
-                        file_attribute_functions=self.attr_function,
-                        outputfolder=report_folder,
-                        print_gml=False,
-                    )
-                else:
-                    obj = HydamoObject(
-                        json_object,
-                        file_attribute_functions=self.attr_function,
-                        outputfolder=report_folder,
-                        print_gml=False,
-                    )
-                # obj.validate_gml(write_error_log=True)
-                # obj.write_gml(export_path, ignore_errors=True, skip_validation=True)
-
-                obj.write_gpkg(export_path)
+            obj.write_gpkg(self.source_data_dir)

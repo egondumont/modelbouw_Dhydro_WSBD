@@ -3,7 +3,7 @@ import math
 from shapely.geometry import LineString, Point
 import logging
 import geopandas as gpd
-from tohydamogml.read_database import read_filegdb
+from wbd_tools.tohydamogml.read_database import read_filegdb
 import tqdm
 import os
 

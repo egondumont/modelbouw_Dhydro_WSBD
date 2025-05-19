@@ -8,14 +8,13 @@ import numpy as np
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import LineString, Point
-from tohydamogml.domeinen_damo_2_2 import *
-from tohydamogml.config import *
+from wbd_tools.tohydamogml.domeinen_damo_2_2 import *
+from wbd_tools.tohydamogml.config import *
 import logging
 import shapely
 from random import randint
 import sys
-sys.path.append("..")
-from WBD_tools.dwarsprofiel_xyz import make_profile, _make_xyz
+from wbd_tools.dwarsprofiel_xyz import make_profile, _make_xyz
 
 
 # Columns in DAMO to search for id of related object
