@@ -14,8 +14,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from pathlib import Path
-### /import
-#all good
+
 class ProcessPumps:
 
     def __init__(self,output_dir,checkbuffer):

@@ -96,3 +96,5 @@ if activities["closing"]:
 
 logging.info("Finished")
 logging.shutdown()
+
+# %%
