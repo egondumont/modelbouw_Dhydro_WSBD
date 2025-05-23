@@ -33,7 +33,7 @@ dependencies = [
 dynamic = ["version"]
 
 [tool.hatch.version]
-path = "WBD_tools/__init__.py"
+path = "wbd_tools/__init__.py"
 
 [project.urls]
 Source = "https://github.com/egondumont/modelbouw_Dhydro_WSBD/tree/master/WBD_tools"

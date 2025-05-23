@@ -1,28 +1,33 @@
 # %%
 #  imports
-import os
 import logging
-import shutil
-import sys
-from pathlib import Path
+import os
 from datetime import datetime
-from wbd_tools import GetData, init_gdb, get_modelgebied
-from wbd_tools.process_damo import ProcessNetwork, ProcessProfiles, ProcessCulverts, ProcessWeirs, ProcessPumps, ProcessClosings
-from wbd_tools.tohydamogml.hydamo_table import HydamoObject
+from pathlib import Path
+
+from wbd_tools import GetData, get_modelgebied, init_gdb
 from wbd_tools.fnames import get_fnames
+from wbd_tools.process_damo import (
+    ProcessClosings,
+    ProcessCulverts,
+    ProcessNetwork,
+    ProcessProfiles,
+    ProcessPumps,
+    ProcessWeirs,
+)
 
+# %%
 
-#%%
 
 # ophalen van file-namen en modelgebied uit foldernaam
 fnames = get_fnames()
 modelnaam = Path(__file__).parent.name
 
 # initialiseren van geodatabase
-json_dir = init_gdb(damo_gdb= fnames["damo_gdb"])
+json_dir = init_gdb(damo_gdb=fnames["damo_gdb"])
 
 
-#%%
+# %%
 # relative path tot parent folder of script order to access model attribute_functions in folder 'json'
 
 activities = {
@@ -37,13 +42,17 @@ activities = {
 
 checkbuffer = [0.5, 5]
 
-#%%
+# %%
 
 # define clip-polygon
 
-modelgebied = get_modelgebied(modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam)
+modelgebied = get_modelgebied(
+    modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam
+)
 
-output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
+output_dir = fnames["modellen_output"].joinpath(
+    f"{modelnaam}", datetime.today().strftime("%Y%m%d")
+)
 output_dir.mkdir(exist_ok=True, parents=True)
 
 logging.basicConfig(
@@ -54,7 +63,19 @@ logging.info("Started")
 if activities["laden"]:
     logging.info(f"loading data for {modelnaam}")
     get_data = GetData(json_dir=json_dir, output_dir=output_dir, poly_mask=modelgebied)
-    get_data.run(json_subset=["hydroobject", "kunstwerkopening", "regelmiddel", "dwarsprofiel", "duikersifonhevel", "afsluitmiddel", "gemaal","pomp", "stuw"])
+    get_data.run(
+        json_subset=[
+            "hydroobject",
+            "kunstwerkopening",
+            "regelmiddel",
+            "dwarsprofiel",
+            "duikersifonhevel",
+            "afsluitmiddel",
+            "gemaal",
+            "pomp",
+            "stuw",
+        ]
+    )
     logging.info("finished data loading")
 
 
@@ -84,7 +105,7 @@ if activities["weirs"]:
 
 if activities["pumping"]:
     logging.info("Start processing pumping stations")
-    process_pumps= ProcessPumps(output_dir, checkbuffer)
+    process_pumps = ProcessPumps(output_dir, checkbuffer)
     process_pumps.run()
     logging.info("finished processing pumping stations")
 
