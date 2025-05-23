@@ -37,7 +37,8 @@ path = "wbd_tools/__init__.py"
 
 [tool.hatch.build]
 include = [
-    "wbd_tools/json/*.json"
+    "wbd_tools/json/*.json",
+    "wbd_tools/**/*.py",
 ]
 
 [project.urls]
