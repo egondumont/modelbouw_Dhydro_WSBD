@@ -1,34 +1,32 @@
-# Introduction 
-BH8519 code development all still TODO. 
+# WBD tools voor het bouwen van DHydro modellen
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+Een workflow voor het bouwen van DHydro modellen binnen waterschap Brabantse Delta, inclusief:
+- Het afleiden van afwaterende eenheden op basis van het AHN en deelstroomgebieden
+- Het voorbewerken van DAMO data naar valide en gevulde HyDAMO data
+- Het converteren van HyDAMO data naar een DHydro model
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+## Installatie
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+### Clonen repositories
+Clone deze repository en daarnaast de branch `hkv_dhydamo_development` van HYDROLIB: [https://github.com/deltares/hydrolib](https://github.com/deltares/hydrolib)
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
-
-
-# Installatie
-Maak de environment aan op basis van `environment_wbd.yml` met:
+### Conda environment
+Maak de juiste conda-environment aan op basis van `environment.yml`
 
 ```
-conda env create -f environment_wbd.yml
+conda env create -f environment.yml
 ```
 
-Vervolgens installeer je de module `afwateringseenheden` vanuit de subfolder `./WBD_tools/afwateringseenheden` met:
+### Toevoegen python-packages
+Activeer je environment (`conda activate WBD`) en navigeer achtereenvolgens naar de root (locatie waar `pyproject.toml` staat) van de hydrolib én deze repository en installeer deze met
 
 ```
 pip install -e .
 ```
+
+N.B. met `-e` (editable) worden de de paden van de modules gelinkt, waardoor wijzigingen in de code direct beschikbaar zijn zonder het opnieuw uitvoeren van de installatie
+
+## Over deze module
+Deze module wordt ontwikkeld door waterschap Brabantse Delta. In het ontwikkeling van deze code is bijgedragen door `Royal HaskoningDHV` en `D2Hydro`. Daarnaast wordt er gebruik gemaakt van `DHyDAMO` en `Hydrolib-core` welke worden ontwikkeld door `HKV` en `Deltares`.
+
+De code is open source en vrij te gebruiken.
