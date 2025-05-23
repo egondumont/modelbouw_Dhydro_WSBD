@@ -65,7 +65,7 @@ from hydrolib.core.dflowfm.storagenode.models import StorageNodeModel
 
 from hydrolib.dhydamo.core.hydamo import HyDAMO
 from hydrolib.dhydamo.converters.df2hydrolibmodel import Df2HydrolibModel
-from hydrolib.dhydamo.geometry import mesh
+from hydrolib.dhydamo.geometry import mesh, spatial
 from hydrolib.dhydamo.geometry.mesh2d_gridgeom import Mesh2D_GG, Rectangular
 from hydrolib.dhydamo.geometry.gridgeom.links1d2d import Links1d2d
 from hydrolib.dhydamo.core.drr import DRRModel
@@ -150,6 +150,7 @@ fn_crosssections = output_dir / "profielpunt.gpkg"
 fn_weirs = output_dir / "stuw.gpkg"
 fn_regelmiddel = output_dir / "regelmiddel.gpkg"
 fn_kunstwerkopening = output_dir / "kunstwerkopening.gpkg"
+fn_afwateringseenheden = fnames["afwateringseenheden"]
 
 # initialize the class
 hydamo = HyDAMO()
@@ -242,12 +243,25 @@ hydamo.closing_device.read_gpkg_layer(fn_afsluitmiddel, layer_name="afsluitmidde
 
 
 # read laterals
-# hydamo.laterals.read_gpkg_layer(fn_laterals, layer_name="lateraleknoop")
-# for ind, cat in hydamo.catchments.iterrows():
-#     hydamo.catchments.loc[ind, "lateraleknoopcode"] = hydamo.laterals[
-#         hydamo.laterals.globalid == cat.lateraleknoopid
-#     ].code.values[0]
-# hydamo.laterals.snap_to_branch(hydamo.branches, snap_method="overal", maxdist=5000)
+laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
+spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
+laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
+
+# setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
+laterals_df["globalid"] = laterals_df["code"]
+
+# nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
+afwateringseenheden_df = gpd.read_file(
+    fn_afwateringseenheden, layer="afwateringseenheden"
+)
+
+afwateringseenheden_df = afwateringseenheden_df[
+    afwateringseenheden_df.code.isin(laterals_df.code)
+]
+hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
+lateral_discharges = (
+    afwateringseenheden_df.set_index("code").area * 0.001 / 86400
+)  # mm/dag * oppervlak
 
 
 # In[ ]:
@@ -1383,8 +1397,11 @@ else:
     lateral_discharges = 0.01 #hydamo.laterals["afvoer"]
     # lateral_discharges.index = hydamo.laterals.code
     hydamo.external_forcings.convert.laterals(
-        hydamo.laterals, lateral_discharges=None, rr_boundaries=None
+        locations=hydamo.laterals,
+        lateral_discharges=lateral_discharges,
+        rr_boundaries=None,
     )
+
 
 
 # ### Plot the RR model
