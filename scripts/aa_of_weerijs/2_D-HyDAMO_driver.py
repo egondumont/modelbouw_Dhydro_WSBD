@@ -12,8 +12,6 @@
 
 # ## Load Python libraries and Hydrolib-core functionality
 
-# In[1]:
-
 
 # Basis
 from pathlib import Path

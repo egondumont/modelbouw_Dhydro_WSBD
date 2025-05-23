@@ -26,6 +26,45 @@ pip install -e .
 
 N.B. met `-e` (editable) worden de de paden van de modules gelinkt, waardoor wijzigingen in de code direct beschikbaar zijn zonder het opnieuw uitvoeren van de installatie
 
+
+## Environment en bestanden
+In de root van deze repository dien je een `.env` bestand aan te maken, je kunt deze aanmaken door het bestand `.env_example` te kopieren.
+
+
+### AFWATERINGSEENHEDEN_DIR
+Hierin staan alle paden voor het afleiden van afwateringseenheden
+
+```
+AFWATERINGSEENHEDEN_DIR/
+├── data/
+│   ├── clusters/
+│   │   └── afwateringseenheden_25m_15clusters_fixed.shp
+│   ├── hoogtekaart/
+│   │   ├── ahn_tif_bestanden.tif
+│   │   └── .....tif
+│   ├── objecten/
+│   │   └── feature_files_met_damo_objecten.shp
+│   └── waterlopen/
+│       ├── a_waterlopen/
+│       │   └── Legger_waterlopen_A.shp
+│       └── b_waterlopen/
+│           └── Legger_waterlopen_B.shp
+└── out/
+    ├── waterlopen_verwerkt.gpkg
+    ├── afwateringseenheden.gpkg
+    └── clusters
+```
+
+### MODELLEN_DIR
+Hierin staan alle paden voor het bouwen van DHYDRO modellen
+
+```
+MODELLEN_DIR/
+└── data/
+    ├── acceptatiedatabase.gdb
+    └── modelgebieden.gpkg
+```
+
 ## Over deze module
 Deze module wordt ontwikkeld door waterschap Brabantse Delta. In het ontwikkeling van deze code is bijgedragen door `Royal HaskoningDHV` en `D2Hydro`. Daarnaast wordt er gebruik gemaakt van `DHyDAMO` en `Hydrolib-core` welke worden ontwikkeld door `HKV` en `Deltares`.
 
