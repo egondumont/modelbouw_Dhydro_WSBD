@@ -46,18 +46,12 @@ checkbuffer = [0.5, 5]
 
 # define clip-polygon
 
-modelgebied = get_modelgebied(
-    modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam
-)
+modelgebied = get_modelgebied(modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam)
 
-output_dir = fnames["modellen_output"].joinpath(
-    f"{modelnaam}", datetime.today().strftime("%Y%m%d")
-)
+output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
 output_dir.mkdir(exist_ok=True, parents=True)
 
-logging.basicConfig(
-    filename=os.path.join(output_dir, "logging.log"), level=logging.INFO
-)
+logging.basicConfig(filename=os.path.join(output_dir, "logging.log"), level=logging.INFO)
 logging.info("Started")
 
 if activities["laden"]:
