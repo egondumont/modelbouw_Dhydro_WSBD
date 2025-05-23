@@ -1394,8 +1394,6 @@ if RR:
         rr_boundaries=drrmodel.external_forcings.boundary_nodes
     )
 else:
-    lateral_discharges = 0.01 #hydamo.laterals["afvoer"]
-    # lateral_discharges.index = hydamo.laterals.code
     hydamo.external_forcings.convert.laterals(
         locations=hydamo.laterals,
         lateral_discharges=lateral_discharges,
