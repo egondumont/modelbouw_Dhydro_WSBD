@@ -15,6 +15,7 @@
 
 # Basis
 import os
+import shutil
 import sys
 import warnings
 from datetime import datetime
@@ -67,6 +68,8 @@ from hydrolib.dhydamo.io.common import ExtendedDataFrame
 from hydrolib.dhydamo.io.dimrwriter import DIMRWriter
 from hydrolib.dhydamo.io.drrwriter import DRRWriter
 
+from wbd_tools.case_conversions import sentence_to_snake_case
+
 # Define in- and output paths
 
 # In[5]:
@@ -118,6 +121,9 @@ modelnaam = Path(__file__).parent.name
 output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
 output_path = output_dir / "dhydro"
 
+if output_path.exists():
+    shutil.rmtree(output_path)
+
 # define all files needed below
 # fn_pilot_area = os.path.join(data_path, 'gis', 'selectie_pilot.shp')
 # fn_branches = os.path.join(data_path, 'gml', 'hydroobject.gml')
@@ -139,6 +145,7 @@ fn_weirs = output_dir / "stuw.gpkg"
 fn_regelmiddel = output_dir / "regelmiddel.gpkg"
 fn_kunstwerkopening = output_dir / "kunstwerkopening.gpkg"
 fn_afwateringseenheden = fnames["afwateringseenheden"]
+fn_modelgebieden = fnames["modelgebieden_gpkg"]
 
 # initialize the class
 hydamo = HyDAMO()
@@ -216,11 +223,19 @@ hydamo.closing_device.read_gpkg_layer(
 
 
 # read boundaries
-# hydamo.boundary_conditions.read_gpkg_layer(
-#     fn_boundaries, layer_name="hydrologischerandvoorwaarde", index_col="code"
-# )
-# hydamo.boundary_conditions.snap_to_branch(hydamo.branches, snap_method="overal", maxdist=10)
+boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
+boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
 
+spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
+
+mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
+
+boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
+    lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
+)
+
+
+hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 # Catchments and laterals
 
@@ -279,7 +294,9 @@ hydamo.weirs.plot(ax=ax, color="green", label="Weir", markersize=25, zorder=10, 
 # )
 ax.legend()
 
+
 cx.add_basemap(ax, crs=28992, source=cx.providers.OpenStreetMap.Mapnik)
+
 fig.tight_layout()
 
 plt.show()
@@ -630,7 +647,7 @@ hydamo.storagenodes.add_storagenode(
 # In[ ]:
 
 
-# hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=fm.geometry.netfile.network)
+hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=fm.geometry.netfile.network)
 
 
 # However, we also need an upstream discharge boundary, which is not constant. We add a fictional time series, which can be read from Excel as well:
@@ -1591,7 +1608,7 @@ if len(timesteps) > 0:
 # In[ ]:
 
 
-fm.filepath = Path(output_path) / "fm" / "test.mdu"
+fm.filepath = Path(output_path) / "fm" / f"{modelnaam}.mdu"
 dimr = DIMR()
 dimr.component.append(FMComponent(name="DFM", workingDir=Path(output_path) / "fm", model=fm, inputfile=fm.filepath))
 dimr.save(recurse=True)
