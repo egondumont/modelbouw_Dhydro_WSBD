@@ -35,6 +35,11 @@ dynamic = ["version"]
 [tool.hatch.version]
 path = "wbd_tools/__init__.py"
 
+[tool.hatch.build]
+include = [
+    "wbd_tools/json/*.json"
+]
+
 [project.urls]
 Source = "https://github.com/egondumont/modelbouw_Dhydro_WSBD/tree/master/WBD_tools"
 
