@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
+#%%
 
 # # Example of generating a 1D2DRR D-HYDRO model - an overview of functionalities
 # 
@@ -27,8 +26,12 @@ from shapely.geometry import Point, Polygon
 import contextily as cx
 import netCDF4 as nc
 import os
+from datetime import datetime
 import shutil
 import sys
+from wbd_tools.fnames import get_fnames
+from wbd_tools import get_modelgebied
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -79,11 +82,6 @@ from meshkernel.py_structures import DeleteMeshOption
 # In[5]:
 
 
-# path to the package containing the dummy-data
-data_path = Path(r'input_aangepast')
-assert data_path.exists()
-
-
 # Define components that should be used in the model. 1D is used in all cases.
 
 # In[6]:
@@ -109,16 +107,16 @@ TwoD_option = 'MK' # or 'GG'
 # In[ ]:
 
 
-rtc_onlytimeseries = False
-rtc_timeseriesdata = data_path / 'rtc_timeseries.csv'
-
+# rtc_onlytimeseries = False
+# rtc_timeseriesdata = data_path / 'rtc_timeseries.csv'
+data_path = Path()
 
 # In[ ]:
 
 
-output_path = data_path / '..' / 'model_hydrolib5'
-if not output_path.exists():
-    output_path.mkdir(exist_ok=True, parents=True)
+# output_path = data_path / '..' / 'model_hydrolib5'
+# if not output_path.exists():
+#     output_path.mkdir(exist_ok=True, parents=True)
 
 
 # ## Read HyDAMO DAMO2.2 data
@@ -126,7 +124,11 @@ if not output_path.exists():
 # Explore the geopackage
 
 # In[ ]:
+fnames = get_fnames()
+modelnaam = Path(__file__).parent.name
 
+output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
+output_path = output_dir / "dhydro"
 
 # define all files needed below
 # fn_pilot_area = os.path.join(data_path, 'gis', 'selectie_pilot.shp')
@@ -134,7 +136,7 @@ if not output_path.exists():
 # fn_crosssections = os.path.join(data_path, 'gml', 'dwarsprofiel.gml')
 # fn_profiles = os.path.join(data_path, 'gml', 'NormGeparametriseerdProfiel.gml')
 # fn_bridges = os.path.join(data_path, 'gml', 'brug.gml')
-fn_culverts = data_path / r'20250324\duikersifonhevel.gpkg'
+fn_culverts = output_dir / "duikersifonhevel.gpkg"
 # fn_weirs = os.path.join(data_path, 'gml', 'stuw.gml')
 # fn_orifices = os.path.join(data_path, 'gml', 'onderspuier.gml')
 # fn_valves = os.path.join(data_path, 'gml', 'afsluitmiddel.gml')
@@ -142,13 +144,12 @@ fn_culverts = data_path / r'20250324\duikersifonhevel.gpkg'
 # fn_pump1 = os.path.join(data_path, 'gml', 'gemaal.gml')
 # fn_pump2 = os.path.join(data_path, 'gml', 'pomp.gml')
 # fn_control = os.path.join(data_path, 'gml', 'sturing.gml')
-fn_afsluitmiddel = data_path / r'20250324\afsluitmiddel.gpkg'
-fn_test = data_path / 'D-hydamo_testData.gpkg'
-fn_branches = data_path / r'20250324\hydroobject.gpkg'
-fn_crosssections = data_path / r'20250324\profielpunt.gpkg'
-fn_weirs = data_path / r'20250324\stuw.gpkg'
-fn_regelmiddel = data_path / r'20250324\regelmiddel.gpkg'
-fn_kunstwerkopening = data_path / r'20250324\kunstwerkopening.gpkg'
+fn_afsluitmiddel = output_dir / "afsluitmiddel.gpkg"
+fn_branches = output_dir / "hydroobject.gpkg"
+fn_crosssections = output_dir / "profielpunt.gpkg"
+fn_weirs = output_dir / "stuw.gpkg"
+fn_regelmiddel = output_dir / "regelmiddel.gpkg"
+fn_kunstwerkopening = output_dir / "kunstwerkopening.gpkg"
 
 # initialize the class
 hydamo = HyDAMO()
@@ -1688,200 +1689,4 @@ ncfile.institution = institution
 ncfile.references = references
 ncfile.close()
 
-
-# In[ ]:
-
-
-#  int projected_coordinate_system;
-#       :name = "Amersfoort / RD New";
-#       :epsg = 28992; // int
-#       :grid_mapping_name = "Unknown projected";
-#       :longitude_of_prime_meridian = 0.0; // double
-#       :semi_major_axis = 6377397.155; // double
-#       :semi_minor_axis = 6356078.962818189; // double
-#       :inverse_flattening = 299.1528128; // double
-#       :proj4_params = "+proj=sterea +lat_0=52.1561605555556 +lon_0=5.38763888888889 +k=0.9999079 +x_0=155000 +y_0=463000 +ellps=bessel +units=m +no_defs";
-#       :EPSG_code = "EPSG:28992";
-#       :projection_name = "unknown";
-#       :wkt = "PROJCS[\"Amersfoort / RD New\",\n    GEOGCS[\"Amersfoort\",\n        DATUM[\"Amersfoort\",\n            SPHEROID[\"Bessel 1841\",6377397.155,299.1528128,\n     
-
-
-# In[ ]:
-
-
-print("Done!")
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+print("Done")
