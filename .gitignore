@@ -5,3 +5,4 @@ projectgebied/
 WBD_tools/.ipynb_checkpoints/
 **/__pycache__/
 .env
+scripts/aa_of_weerijs/dimr_config.xml

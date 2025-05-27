@@ -17,12 +17,15 @@ import numpy as np
 import geopandas as gpd
 import pandas as pd
 from shapely import ops
-from tohydamogml.gml import Gml
-from tohydamogml.gpkg import Gpkg
-from tohydamogml.read_database import read_filegdb
+from wbd_tools.tohydamogml.gml import Gml
+from wbd_tools.tohydamogml.gpkg import Gpkg
+from wbd_tools.tohydamogml.read_database import read_filegdb
+from wbd_tools import attribute_functions
 import logging
 from datetime import datetime
+from shapely.geometry import Polygon, MultiPolygon
 
+pd.set_option('future.no_silent_downcasting', True)
 
 class HydamoObject:
     """
@@ -33,9 +36,8 @@ class HydamoObject:
         self,
         path_json: str,
         print_gml=True,
-        mask: str = None,
-        file_attribute_functions=None,
-        outputfolder=None,
+        mask: Polygon | None = None,
+        report_dir=None,
     ):
         """
 
@@ -43,13 +45,6 @@ class HydamoObject:
         :param print_gml: bool, print GML in output window
         :param mask: string, path to shapefile with 1 polygon
         """
-
-        # load attribute functions
-        if file_attribute_functions:
-            fname_ext = os.path.basename(file_attribute_functions)
-            dirname = os.path.dirname(file_attribute_functions)
-            sys.path.append(dirname)
-            self.ws = __import__(os.path.splitext(fname_ext)[0])
 
         with open(path_json) as f:
             obj = json.load(f)
@@ -63,22 +58,15 @@ class HydamoObject:
         self.attr_dummy = {}
         self.fill_na = {}
         self._gml = None
-        self.mask = None
-        self._outputfolder = outputfolder
+        self.mask = mask
+        self._report_dir = report_dir
         self._read_attributes_to_dicts(obj)
-
-        if mask:
-            mask_tbl = gpd.read_file(mask)
-            if len(mask_tbl) == 1:
-                self.mask = mask_tbl["geometry"][0]
-            else:
-                print("mask has more than one record and is therefore not valid!")
 
         if not os.path.dirname(
             obj["source"]["path"]
         ):  # if only a filename is specified, without directory...
             obj["source"]["path"] = os.path.join(
-                os.path.dirname(self._outputfolder), obj["source"]["path"]
+                os.path.dirname(self._report_dir), obj["source"]["path"]
             )  # it's assumed that the file is in the current output folder of tohydamogml
 
         self._create_object(obj, self.mask)
@@ -150,7 +138,7 @@ class HydamoObject:
 
         # Geometry operations
         if self.obj["geometry"]["func"]:
-            func = eval("self.ws." + self.obj["geometry"]["func"])
+            func = getattr(attribute_functions, self.obj["geometry"]["func"])
             if self.obj["geometry"]["one2one"]:
                 self.gdf["geometry"] = pd.DataFrame(
                     data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)}
@@ -164,7 +152,7 @@ class HydamoObject:
 
         # Custom index operations
         if "func" in self.obj["index"].keys():
-            func = eval("self.ws." + self.obj["index"]["func"])
+            func = getattr(attribute_functions, self.obj["index"]["func"])
             ind = pd.Index(data=func(damo_gdf=gdf_src, obj=self.obj), name="code")
             self.gdf.index = ind
 
@@ -196,7 +184,7 @@ class HydamoObject:
         """
         if attr["src_col"] or attr["func"]:
             if attr["func"]:
-                func = eval("self.ws." + attr["func"])
+                func = getattr(attribute_functions, attr["func"])
             else:
                 func = None
             self._add_src_attr(attr["name"], gdf, func)
@@ -265,7 +253,7 @@ class HydamoObject:
         """
         if self._gml is None:
             self._gml = Gml(
-                self.gdf.reset_index(), self.objectname, outputfolder=self._outputfolder
+                self.gdf.reset_index(), self.objectname, outputfolder=self._report_dir
             )
         return self._gml
 
@@ -561,7 +549,7 @@ class HydamoObject:
             )
         else:
             #       tmp_attr = tmp_attr[tmp_attr[attr].notna()]
-            tmp_attr[attr].fillna(value=-999, inplace=True)
+            tmp_attr[attr] = tmp_attr[attr].fillna(value=-999)
         return tmp_attr
 
     def _set_datatype(self, attr, tmp_attr):
@@ -577,11 +565,11 @@ class HydamoObject:
     @property
     def output_folder(self):
         """Make dir is not exist"""
-        if self._outputfolder is None:
+        if self._report_dir is None:
             folder = os.path.join("log", datetime.today().strftime("%Y%m%d_%H%M"))
             os.makedirs(folder)
-            self._outputfolder = folder
-        return self._outputfolder
+            self._report_dir = folder
+        return self._report_dir
 
     # def _table_to_data_frame(self, in_table, input_fields=None, where_clause=None, prefix="rel_"):
     #     """Function will convert an arcgis table into a pandas dataframe with an object ID index, and the selected

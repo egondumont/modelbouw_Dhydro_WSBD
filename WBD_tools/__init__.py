@@ -1,8 +1,6 @@
+from wbd_tools.get_data import GetData, init_gdb
+from wbd_tools.get_modelgebied import get_modelgebied
+
 __title__ = 'WBD_tools'
-__description__ = 'validation and correction tools for D-Hydro model generation source data'
-__version__ = '0.0.1'
-__author__ = 'HaskoningDHV'
-__author_email__ = 'albert.goedbloed@rhdhv.com'
-__license__ = 'MIT'
-__url__ = ''
-__keywords__ = 'DAMO HyDAMO D-HYDRO'
+__version__ = "0.0.1"
+__all__ = ["GetData", "init_gdb"]

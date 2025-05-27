@@ -19,7 +19,7 @@ import pyproj
 from lxml import etree
 from fiona.crs import from_epsg
 
-from tohydamogml.config import XSI_NAMESPACE, NHI_NAMESPACE, GML_NAMESPACE, XSD, XSD_PATH, DEFAULT_CRS
+from wbd_tools.tohydamogml.config import XSI_NAMESPACE, NHI_NAMESPACE, GML_NAMESPACE, XSD, XSD_PATH, DEFAULT_CRS
 
 
 class Gml:
