@@ -33,12 +33,6 @@ from wbd_tools.fnames import get_fnames
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-
-# In[2]:
-
-os.getcwd()
-
-
 # In[3]:
 
 
@@ -1639,9 +1633,7 @@ if RR:
 
 dimr = DIMRWriter(
     output_path=output_path,
-    dimr_path=str(
-        r"C:\Program Files\Deltares\D-HYDRO Suite 2024.03 1D2D\plugins\DeltaShell.Dimr\kernels\x64\bin\run_dimr.bat"
-    ),
+    dimr_path=fnames["run_dimr_bat"].as_posix(),
 )
 
 
