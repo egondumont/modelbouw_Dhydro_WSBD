@@ -41,21 +41,26 @@ def load_env_to_dict(env_file: Path | None = None):
 
 
 # %%
-def get_fnames(AFWATERINGSEENHEDEN_DIR: Path | None = None, MODELLEN_DIR: Path | None = None) -> dict[Path]:
+def get_fnames(
+    AFWATERINGSEENHEDEN_DIR: Path | None = None, MODELLEN_DIR: Path | None = None, RUN_DIMR_BAT: Path | None = None
+) -> dict[Path]:
     """Get all fnames from"""
     fnames = {k.lower(): v for k, v in locals().items()}
-
-    env = None
+    print(fnames)
+    env = load_env_to_dict()
     for variable, value in fnames.items():
         # if not specified we read it from .env
         if value is None:
-            # load env
-            if env is None:
-                env = load_env_to_dict()
             # raise ValueError if local is not in env
             if variable.upper() not in env.keys():
-                raise ValueError(f"{variable.upper()} not specified as input nor in {find_env_file()}")
-            fnames[variable] = Path(env[variable.upper()])
+                if variable == "run_dimr_bat":
+                    fnames[variable] = Path(
+                        r"C:\Program Files\Deltares\D-HYDRO Suite 2024.03 1D2D\plugins\DeltaShell.Dimr\kernels\x64\bin\run_dimr.bat"
+                    )
+                else:
+                    raise ValueError(f"{variable.upper()} not specified as input nor in {find_env_file()}")
+            else:
+                fnames[variable] = Path(env[variable.upper()])
         else:
             fnames[variable] = Path(value)
 
