@@ -81,9 +81,8 @@ from wbd_tools.case_conversions import sentence_to_snake_case
 
 
 TwoD = False
-RR = False
+RR = True
 RTC = False
-
 
 # Two concepts are available for 2D mesh generation. Use 'GG' for gridgeom (works only in windows, identical to delft3dfmpy), or 'MK' for Meshkernel. Meshkernel is eventually the preferred option (platform-independent, more triangulation options) but has limited support for complex geometries as of now.
 
@@ -1058,9 +1057,9 @@ if RR:
 
 
 if RR:
-    lu_file = data_path / "rasters" / "sobek_landuse.tif"
-    ahn_file = data_path / "rasters" / "AHN_2m_clipped_filled.tif"
-    soil_file = data_path / "rasters" / "sobek_soil.tif"
+    # lu_file = data_path / "rasters" / "sobek_landuse.tif"
+    # ahn_file = data_path / "rasters" / "AHN_2m_clipped_filled.tif"
+    # soil_file = data_path / "rasters" / "sobek_soil.tif"
     surface_storage = 10.0  # [mm]
     infiltration_capacity = 100.0  # [mm/hr]
     initial_gwd = 1.2  # water level depth below surface [m]
