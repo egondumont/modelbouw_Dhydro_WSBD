@@ -70,11 +70,13 @@ from hydrolib.dhydamo.io.drrwriter import DRRWriter
 
 # %%
 # path to the package containing the dummy-data
-data_path = Path("./data").resolve()
+data_path = Path(
+    r"d:\projecten\D2508.WBD_modelinstrumentarium\08.cursusmateriaal\D-HYDRO cursus Waterschapsmarkt\Basiscursus_Automatische_Modelgeneratie_met_D-HyDAMO\data"
+).resolve()
 assert data_path.exists()
 
 # path to write the models
-output_path = Path("./model_oefening").resolve()
+output_path = Path(__file__).parent.resolve()
 output_path.mkdir(exist_ok=True, parents=False)
 assert output_path.exists()
 
