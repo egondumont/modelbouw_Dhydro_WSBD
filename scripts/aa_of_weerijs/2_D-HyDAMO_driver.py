@@ -82,7 +82,7 @@ RR = any((RR_UNPAVED, RR_PAVED, RR_GREENHOUSES))
 RTC = False
 
 AHN_FILE = "ahn.tif"
-LU_FILE = "Reclass_LGN22.tif"
+LU_FILE = "landgebruik.tif"
 SOIL_FILE = "bodemtypen.tif"
 
 # Two concepts are available for 2D mesh generation. Use 'GG' for gridgeom (works only in windows, identical to delft3dfmpy), or 'MK' for Meshkernel. Meshkernel is eventually the preferred option (platform-independent, more triangulation options) but has limited support for complex geometries as of now.
@@ -1368,10 +1368,10 @@ if RR:
 
 if RR:
     seepage_folder = fnames["rasters_dir"] / "seepage"
-    precip_file = str(data_path / "DEFAULT.BUI")
+    precip_folder = fnames["rasters_dir"] / "precipitation"
     evap_folder = fnames["rasters_dir"] / "evaporation"
     drrmodel.external_forcings.io.seepage_from_input(hydamo.catchments, seepage_folder)
-    drrmodel.external_forcings.io.precip_from_input(meteo_areas, precip_folder=None, precip_file=precip_file)
+    drrmodel.external_forcings.io.precip_from_input(meteo_areas, precip_folder=precip_folder)
     drrmodel.external_forcings.io.evap_from_input(meteo_areas, evap_folder=evap_folder, evap_file=None)
 
 

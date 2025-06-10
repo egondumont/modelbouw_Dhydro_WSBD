@@ -1,6 +1,8 @@
 # %%
 """Voor het schonen van rasters t.b.v. DHyDAMO"""
 
+import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -54,44 +56,57 @@ def opschonen_raster(
 
 
 # %%
-# Path to the source raster
-raster_file = r"d:\projecten\D2508.WBD_modelinstrumentarium\07.rasters\ahn.tif"
-# Path to the output raster
-dst_folder = Path(r"d:\projecten\D2508.WBD_modelinstrumentarium\07.rasters\seepage")
+def generate_constant_time_rasters(
+    raster_template_file: Path,
+    dst_folder: Path,
+    raster_prefix: str,
+    start_time: datetime,
+    end_time: datetime,
+    delta_time: timedelta,
+    constant_value: float,
+    cell_size: int | None = None,
+):
+    dst_folder = Path(dst_folder)
 
-dst_folder.mkdir(parents=True, exist_ok=True)
+    # make dst_folder
+    if dst_folder.exists():
+        shutil.rmtree(dst_folder)
+    dst_folder.mkdir(parents=True, exist_ok=True)
 
-# Open the source raster
-with rasterio.open(raster_file) as src:
-    bounds = src.bounds
-    crs = src.crs
+    # Open the source raster
+    with rasterio.open(raster_template_file) as src:
+        bounds = src.bounds
+        crs = src.crs
 
-# Define the new resolution
-cell_size = 25
+    # Define the new resolution
+    if cell_size is None:
+        cell_size = abs(src.res[0])
 
-# Calculate the number of rows and columns
-width = int((bounds.right - bounds.left) / cell_size)
-height = int((bounds.top - bounds.bottom) / cell_size)
+    # Calculate the number of rows and columns
+    width = int((bounds.right - bounds.left) / cell_size)
+    height = int((bounds.top - bounds.bottom) / cell_size)
 
-# Define transform (origin at top-left)
-transform = from_origin(bounds.left, bounds.top, cell_size, cell_size)
+    # Define transform (origin at top-left)
+    transform = from_origin(bounds.left, bounds.top, cell_size, cell_size)
 
-# Create an array filled with zeros (or any data you want)
-data = np.zeros((height, width), dtype=np.float32)
+    # Create an array filled with zeros (or any data you want)
+    data = np.zeros((height, width), dtype=np.float32) * constant_value
 
-# Write the new raster
-raster_out_file = dst_folder / "raster.tif"
-with rasterio.open(
-    raster_out_file,
-    "w",
-    driver="GTiff",
-    height=height,
-    width=width,
-    count=1,
-    dtype="float32",
-    crs=crs,
-    transform=transform,
-) as dst:
-    dst.write(data, 1)
+    timesteps = int((end_time - start_time) / delta_time + 0.5)
+    for time_step in range(timesteps):
+        time_stamp = start_time + delta_time * time_step
 
-# %%
+        raster_out_file = dst_folder / f"{raster_prefix}_{time_stamp.strftime('%Y%m%d%H%M')}.tif"
+        # Write the new raster
+        with rasterio.open(
+            raster_out_file,
+            "w",
+            driver="GTiff",
+            height=height,
+            width=width,
+            count=1,
+            dtype="float32",
+            crs=crs,
+            transform=transform,
+        ) as dst:
+            dst.write(data, 1)
