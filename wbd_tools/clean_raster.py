@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import rasterio
+from rasterio.transform import from_origin
 
 
 def opschonen_raster(
@@ -50,3 +51,47 @@ def opschonen_raster(
 
     with rasterio.open(raster_out_file, "w+", **profile) as dst:
         dst.write(data, 1)
+
+
+# %%
+# Path to the source raster
+raster_file = r"d:\projecten\D2508.WBD_modelinstrumentarium\07.rasters\ahn.tif"
+# Path to the output raster
+dst_folder = Path(r"d:\projecten\D2508.WBD_modelinstrumentarium\07.rasters\seepage")
+
+dst_folder.mkdir(parents=True, exist_ok=True)
+
+# Open the source raster
+with rasterio.open(raster_file) as src:
+    bounds = src.bounds
+    crs = src.crs
+
+# Define the new resolution
+cell_size = 25
+
+# Calculate the number of rows and columns
+width = int((bounds.right - bounds.left) / cell_size)
+height = int((bounds.top - bounds.bottom) / cell_size)
+
+# Define transform (origin at top-left)
+transform = from_origin(bounds.left, bounds.top, cell_size, cell_size)
+
+# Create an array filled with zeros (or any data you want)
+data = np.zeros((height, width), dtype=np.float32)
+
+# Write the new raster
+raster_out_file = dst_folder / "raster.tif"
+with rasterio.open(
+    raster_out_file,
+    "w",
+    driver="GTiff",
+    height=height,
+    width=width,
+    count=1,
+    dtype="float32",
+    crs=crs,
+    transform=transform,
+) as dst:
+    dst.write(data, 1)
+
+# %%
