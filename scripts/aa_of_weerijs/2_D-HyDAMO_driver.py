@@ -75,8 +75,15 @@ from wbd_tools.case_conversions import sentence_to_snake_case
 
 
 TwoD = False
-RR = True
+RR_UNPAVED = True
+RR_PAVED = False
+RR_GREENHOUSES = False
+RR = any((RR_UNPAVED, RR_PAVED, RR_GREENHOUSES))
 RTC = False
+
+AHN_FILE = "ahn.tif"
+LU_FILE = "Reclass_LGN22.tif"
+SOIL_FILE = "bodemtypen.tif"
 
 # Two concepts are available for 2D mesh generation. Use 'GG' for gridgeom (works only in windows, identical to delft3dfmpy), or 'MK' for Meshkernel. Meshkernel is eventually the preferred option (platform-independent, more triangulation options) but has limited support for complex geometries as of now.
 
@@ -236,13 +243,12 @@ hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 
 # read catchments
-# hydamo.catchments.read_gpkg_layer(fn_catchments, layer_name="afvoergebiedaanvoergebied", index_col="code", check_geotype=False)
 
 
 # In[ ]:
 
 
-# read laterals
+# read laterals and catchments
 laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
 spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
 laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
@@ -256,6 +262,11 @@ afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwatering
 afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
 hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
 lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
+
+
+afwateringseenheden_df["globalid"] = afwateringseenheden_df["code"]
+afwateringseenheden_df["lateraleknoopid"] = afwateringseenheden_df["code"]
+hydamo.catchments.set_data(afwateringseenheden_df, index_col="code")
 
 
 # In[ ]:
@@ -1050,10 +1061,10 @@ if RR:
 # In[ ]:
 
 
-if RR:
-    # lu_file = data_path / "rasters" / "sobek_landuse.tif"
-    # ahn_file = data_path / "rasters" / "AHN_2m_clipped_filled.tif"
-    # soil_file = data_path / "rasters" / "sobek_soil.tif"
+if RR_UNPAVED:
+    lu_file = fnames["rasters_dir"] / LU_FILE
+    ahn_file = fnames["rasters_dir"] / AHN_FILE
+    soil_file = fnames["rasters_dir"] / SOIL_FILE
     surface_storage = 10.0  # [mm]
     infiltration_capacity = 100.0  # [mm/hr]
     initial_gwd = 1.2  # water level depth below surface [m]
@@ -1099,7 +1110,7 @@ if RR:
 # In[ ]:
 
 
-if RR:
+if RR_GREENHOUSES:
     roof_storage = 5.0  # [mm]
     basin_storage_class = 3  # default class
     hydamo.greenhouse_areas.read_gpkg_layer(data_path / "greenhouses.gpkg", layer_name="greenhouses", index_col="code")
@@ -1172,7 +1183,7 @@ hydamo.greenhouse_areas.head()
 # In[ ]:
 
 
-if RR:
+if RR_UNPAVED:
     drrmodel.unpaved.io.unpaved_from_input(
         hydamo.catchments,
         lu_file,
@@ -1204,7 +1215,7 @@ if RR:
 # In[ ]:
 
 
-if RR:
+if RR_PAVED:
     street_storage = 5.0  # [mm]
     sewer_storage = 5.0  # [mm]
     poc_mmh = data_path / "rasters/pumpcap.tif"
@@ -1239,7 +1250,7 @@ if RR:
 # In[ ]:
 
 
-if RR:
+if RR_PAVED:
     hydamo.sewer_areas.read_shp(
         str(data_path / "rioleringsgebieden.shp"),
         index_col="code",
@@ -1254,7 +1265,7 @@ if RR:
 # In[ ]:
 
 
-if RR:
+if RR_PAVED:
     drrmodel.paved.io.paved_from_input(
         catchments=hydamo.catchments,
         landuse=lu_file,
@@ -1277,7 +1288,7 @@ if RR:
 # In[ ]:
 
 
-if RR:
+if RR_GREENHOUSES:
     # greenhouse with additional greenhouse nodes
     drrmodel.greenhouse.io.greenhouse_from_input(
         catchments=hydamo.catchments,
@@ -1327,8 +1338,8 @@ if RR:
         hydamo.laterals,
         hydamo.catchments,
         drrmodel,
-        overflows=hydamo.overflows,
-        greenhouse_laterals=hydamo.greenhouse_laterals,
+        # overflows=hydamo.overflows,
+        # greenhouse_laterals=hydamo.greenhouse_laterals,
     )
 
 
@@ -1356,9 +1367,9 @@ if RR:
 
 
 if RR:
-    seepage_folder = data_path / "rasters" / "seepage"
+    seepage_folder = fnames["rasters_dir"] / "seepage"
     precip_file = str(data_path / "DEFAULT.BUI")
-    evap_folder = data_path / "rasters" / "evaporation"
+    evap_folder = fnames["rasters_dir"] / "evaporation"
     drrmodel.external_forcings.io.seepage_from_input(hydamo.catchments, seepage_folder)
     drrmodel.external_forcings.io.precip_from_input(meteo_areas, precip_folder=None, precip_file=precip_file)
     drrmodel.external_forcings.io.evap_from_input(meteo_areas, evap_folder=evap_folder, evap_file=None)
@@ -1392,8 +1403,8 @@ if RR:
 if RR:
     hydamo.external_forcings.convert.laterals(
         hydamo.laterals,
-        overflows=hydamo.overflows,
-        greenhouse_laterals=hydamo.greenhouse_laterals,
+        # overflows=hydamo.overflows,
+        # greenhouse_laterals=hydamo.greenhouse_laterals,
         lateral_discharges=None,
         rr_boundaries=drrmodel.external_forcings.boundary_nodes,
     )
@@ -1439,7 +1450,7 @@ def node_geometry(dict):
 # In[ ]:
 
 
-if RR:
+if False:
     ## plt.rcParams['axes.edgecolor'] = 'w'
     import matplotlib.patches as mpatches
 
