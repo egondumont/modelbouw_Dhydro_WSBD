@@ -1182,7 +1182,7 @@ hydamo.greenhouse_areas.head()
 
 # In[ ]:
 
-
+hydamo.catchments["boundary_node"] = hydamo.catchments["lateraleknoopid"]
 if RR_UNPAVED:
     drrmodel.unpaved.io.unpaved_from_input(
         hydamo.catchments,
