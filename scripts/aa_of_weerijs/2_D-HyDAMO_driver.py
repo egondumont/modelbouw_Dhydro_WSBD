@@ -1403,8 +1403,8 @@ if RR:
 if RR:
     hydamo.external_forcings.convert.laterals(
         hydamo.laterals,
-        # overflows=hydamo.overflows,
-        # greenhouse_laterals=hydamo.greenhouse_laterals,
+        overflows=None,
+        greenhouse_laterals=None,
         lateral_discharges=None,
         rr_boundaries=drrmodel.external_forcings.boundary_nodes,
     )
