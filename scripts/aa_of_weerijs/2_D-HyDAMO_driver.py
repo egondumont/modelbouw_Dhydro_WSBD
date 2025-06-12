@@ -250,22 +250,24 @@ hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 # read laterals and catchments
 laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
+laterals_df["code"] = "lat_" + laterals_df["code"]
 spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
 laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
 
 # setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
 laterals_df["globalid"] = laterals_df["code"]
+hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
 
 # nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
 afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
+afwateringseenheden_df["lateraleknoopid"] = "lat_" + afwateringseenheden_df["code"]
 
-afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
-hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
+afwateringseenheden_df = afwateringseenheden_df[(afwateringseenheden_df.lateraleknoopid).isin(laterals_df.code)]
+
 lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
 
-
 afwateringseenheden_df["globalid"] = afwateringseenheden_df["code"]
-afwateringseenheden_df["lateraleknoopid"] = afwateringseenheden_df["code"]
+
 hydamo.catchments.set_data(afwateringseenheden_df, index_col="code")
 
 
