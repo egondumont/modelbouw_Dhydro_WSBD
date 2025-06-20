@@ -49,6 +49,7 @@ checkbuffer = [0.5, 5]
 modelgebied = get_modelgebied(modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam)
 
 output_dir = create_output_dir(model_name=modelnaam, date=datetime.today())
+print(f"output_dir: {output_dir}")
 
 logging.basicConfig(filename=os.path.join(output_dir, "logging.log"), level=logging.INFO)
 logging.info("Started")

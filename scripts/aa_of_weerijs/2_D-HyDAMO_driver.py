@@ -111,7 +111,9 @@ data_path = Path()
 fnames = get_fnames()
 modelnaam = Path(__file__).parent.name
 
+# met date=None zoeken we de laatste output-dir
 output_dir = get_output_dir(model_name=modelnaam, date=None)
+print(f"output_dir: {output_dir}")
 output_path = output_dir / "dhydro"
 
 if output_path.exists():
