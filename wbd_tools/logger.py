@@ -1,8 +1,8 @@
 import logging
 
 
-def get_logger(level: str = "INFO"):
-    logger = logging.getLogger("afwateringseenheden")
+def get_logger(level: str = "INFO", name: str = "wbd_tools"):
+    logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, level))
     if not logger.handlers:
         handler = logging.StreamHandler()

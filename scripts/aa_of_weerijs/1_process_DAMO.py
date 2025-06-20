@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from wbd_tools import GetData, get_modelgebied, init_gdb
-from wbd_tools.fnames import get_fnames
+from wbd_tools.fnames import create_output_dir, get_fnames
 from wbd_tools.process_damo import (
     ProcessClosings,
     ProcessCulverts,
@@ -48,8 +48,8 @@ checkbuffer = [0.5, 5]
 
 modelgebied = get_modelgebied(modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam)
 
-output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
-output_dir.mkdir(exist_ok=True, parents=True)
+output_dir = create_output_dir(model_name=modelnaam, date=datetime.today())
+print(f"output_dir: {output_dir}")
 
 logging.basicConfig(filename=os.path.join(output_dir, "logging.log"), level=logging.INFO)
 logging.info("Started")
