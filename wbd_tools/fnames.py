@@ -6,6 +6,11 @@ from pathlib import Path
 from wbd_tools.logger import get_logger
 
 DATE_TIME_PATTERN = "%Y%m%d"
+DEFAULT_FNAMES = {
+    "RUN_DIMR_BAT": Path(
+        r"C:\Program Files\Deltares\D-HYDRO Suite 2024.03 1D2D\plugins\DeltaShell.Dimr\kernels\x64\bin\run_dimr.bat"
+    )
+}
 logger = get_logger()
 
 
@@ -47,27 +52,30 @@ def load_env_to_dict(env_file: Path | None = None):
 
 
 def get_fnames(
-    AFWATERINGSEENHEDEN_DIR: Path | None = None, MODELLEN_DIR: Path | None = None, RUN_DIMR_BAT: Path | None = None
+    AFWATERINGSEENHEDEN_DIR: Path | None = None,
+    MODELLEN_DIR: Path | None = None,
+    RUN_DIMR_BAT: Path | None = None,
+    RASTERS_DIR: Path | None = None,
 ) -> dict[Path]:
     """Get all fnames from"""
-    fnames = {k.lower(): v for k, v in locals().items()}
-    print(fnames)
+    kwargs = locals().copy()
+    defaults = {k: v for k, v in kwargs.items() if v is not None}
+
+    # init fnames from env
     env = load_env_to_dict()
-    for variable, value in fnames.items():
+    fnames = {k.lower(): Path(v) for k, v in env.items()}
+
+    for variable, value in kwargs.items():
+        print(variable, value)
         # if not specified we read it from .env
         if value is None:
-            # raise ValueError if local is not in env
-            if variable.upper() not in env.keys():
-                if variable == "run_dimr_bat":
-                    fnames[variable] = Path(
-                        r"C:\Program Files\Deltares\D-HYDRO Suite 2024.03 1D2D\plugins\DeltaShell.Dimr\kernels\x64\bin\run_dimr.bat"
-                    )
+            if variable.lower() not in fnames.keys():
+                if variable in DEFAULT_FNAMES:
+                    fnames[variable.lower()] = DEFAULT_FNAMES[variable]
                 else:
                     raise ValueError(f"{variable.upper()} not specified as input nor in {find_env_file()}")
-            else:
-                fnames[variable] = Path(env[variable.upper()])
         else:
-            fnames[variable] = Path(value)
+            fnames[variable.lower()] = Path(value)
 
     # afwateringseenheden: all we read
     DATA_DIR = fnames["afwateringseenheden_dir"] / "data"

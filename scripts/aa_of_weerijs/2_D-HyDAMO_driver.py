@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 
 from wbd_tools.fnames import get_fnames, get_output_dir
 
@@ -61,6 +61,7 @@ from hydrolib.dhydamo.io.common import ExtendedDataFrame
 from hydrolib.dhydamo.io.dimrwriter import DIMRWriter
 from hydrolib.dhydamo.io.drrwriter import DRRWriter
 
+from wbd_tools import get_modelgebied
 from wbd_tools.case_conversions import sentence_to_snake_case
 
 # Define in- and output paths
@@ -113,7 +114,6 @@ modelnaam = Path(__file__).parent.name
 
 # met date=None zoeken we de laatste output-dir
 output_dir = get_output_dir(model_name=modelnaam, date=None)
-print(f"output_dir: {output_dir}")
 output_path = output_dir / "dhydro"
 
 if output_path.exists():
@@ -720,12 +720,13 @@ hydamo.external_forcings.set_initial_waterdepth(1.5)
 
 # In[ ]:
 
-
+# extent is 250m rondom hydroobjecten
+modelgebied = get_modelgebied(modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam)
 if TwoD:
-    extent = gpd.read_file(data_path / "2D_extent.shp").at[0, "geometry"]
+    extent = modelgebied
     network = fm.geometry.netfile.network
-    cellsize = 50.0
-    rasterpath = data_path / "rasters/AHN_2m_clipped_filled.tif"
+    cellsize = 40.0
+    rasterpath = fnames["rasters_dir"] / "ahn.tif"
 
 
 # Add a rectangular mesh::
@@ -754,12 +755,13 @@ if TwoD:
 
 # In[ ]:
 
-
-if TwoD:
-    buffer = Polygon(hydamo.branches.buffer(50.0).union_all().exterior)
+# refinement laten we even zitten, want dat is best tricky
+Refine = True
+if TwoD & Refine:
+    buffer = hydamo.branches.buffer(60.0).union_all()
     if TwoD_option == "MK":
         print("Nodes before refinement:", network._mesh2d.mesh2d_node_x.size)
-        mesh.mesh2d_refine(network, buffer, 1)
+        mesh.mesh2d_refine(network, buffer, 2)
         print("Nodes after refinement:", network._mesh2d.mesh2d_node_x.size)
     elif TwoD_option == "GG":
         print("Nodes before refinement:", len(mesh_gg.meshgeom.get_values("nodex")))
@@ -776,7 +778,7 @@ if TwoD:
     if TwoD_option == "MK":
         print("Nodes before clipping:", network._mesh2d.mesh2d_node_x.size)
         for i, branch in hydamo.branches.iterrows():
-            uitknippen = branch.geometry.buffer(10.0)
+            uitknippen = branch.geometry.buffer(5)
             mesh.mesh2d_clip(network, uitknippen, inside=True)
         print("Nodes after clipping:", network._mesh2d.mesh2d_node_x.size)
     elif TwoD_option == "GG":
