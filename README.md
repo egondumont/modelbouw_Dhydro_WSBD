@@ -28,7 +28,7 @@ N.B. met `-e` (editable) worden de de paden van de modules gelinkt, waardoor wij
 
 
 ## Environment en bestanden
-In de root van deze repository dien je een `.env` bestand aan te maken, je kunt deze aanmaken door het bestand `.env_example` te kopieren.
+In de root van deze repository dien je een `.env` bestand aan te maken, je kunt deze aanmaken door de inhoud van het bestand `.env_default` te kopieren naar `.env`. Hierin staan de paden goed voor het draaien van code binnen de omgeving van Brabantse Delta.
 
 ### AFWATERINGSEENHEDEN_DIR
 Hierin staan alle paden voor het afleiden van afwateringseenheden
