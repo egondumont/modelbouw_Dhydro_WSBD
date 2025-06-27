@@ -8,7 +8,6 @@ from wbd_tools.afwateringseenheden.lines import (
 )
 from wbd_tools.afwateringseenheden import get_logger, get_fnames
 
-
 logger = get_logger()
 
 # %%
