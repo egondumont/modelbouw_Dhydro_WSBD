@@ -76,7 +76,7 @@ class Gml:
             featureMember = etree.SubElement(self.FeatureCollection, self.GML + "featureMember")
             obj = etree.SubElement(featureMember, self.NHI + self.objectname)
             for key in row.index:
-                if key is not 'geometry':
+                if key != 'geometry':
                     if not pd.isnull(row[key]):
                         var = etree.SubElement(obj, self.NHI + str(key))
                         if type(row[key]) is pd.Timestamp:
