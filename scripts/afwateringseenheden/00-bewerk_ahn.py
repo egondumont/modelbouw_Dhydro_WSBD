@@ -1,10 +1,10 @@
 # %%
-from pathlib import Path
 
 import rasterio
-from afwateringseenheden.fnames import get_fnames()
 from rasterio.enums import Resampling
 from rasterio.fill import fillnodata
+
+from wbd_tools.fnames import get_fnames
 
 cell_size = 2
 
