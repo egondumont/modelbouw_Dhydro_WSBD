@@ -30,7 +30,6 @@ N.B. met `-e` (editable) worden de de paden van de modules gelinkt, waardoor wij
 ## Environment en bestanden
 In de root van deze repository dien je een `.env` bestand aan te maken, je kunt deze aanmaken door het bestand `.env_example` te kopieren.
 
-
 ### AFWATERINGSEENHEDEN_DIR
 Hierin staan alle paden voor het afleiden van afwateringseenheden
 
@@ -64,6 +63,23 @@ MODELLEN_DIR/
     ├── acceptatiedatabase.gdb
     └── modelgebieden.gpkg
 ```
+
+### RASTERS_DIR
+Hierin zitten rasters opgeslagen die gebruikt worden in `2_D-HyDAMO_driver.py` en bij het afleiden van afwateringseenheden
+
+Let op (!) vanuit reature/RR-modellering kunnen hier straks ook landgebruik, bodemtypen, kwel/wegzijging en neerslag/verdamping in.
+Deze worden in de huidige master nog niet aangegrepen.
+
+```
+RASTERS_DIR/
+├── ahn/
+│   ├── dtm_2m.tif
+├── ....tif
+└── ....tif
+```
+
+### DIMR_BAT
+Optionele verwijzing naar de DHydro DIMR (Deltares Integrated Model Runner).
 
 ## Over deze module
 Deze module wordt ontwikkeld door waterschap Brabantse Delta. In het ontwikkeling van deze code is bijgedragen door `Royal HaskoningDHV` en `D2Hydro`. Daarnaast wordt er gebruik gemaakt van `DHyDAMO` en `Hydrolib-core` welke worden ontwikkeld door `HKV` en `Deltares`.
