@@ -1,18 +1,17 @@
 # %%
 import shutil
-import pandas as pd
+from functools import partial
+
 import geopandas as gpd
 import rioxarray as rxr
 from geocube.api.core import make_geocube
-from functools import partial
 from geocube.rasterize import rasterize_image
-from pathlib import Path
+
 from wbd_tools.afwateringseenheden import (
-    get_logger,
     calculate_subcatchments,
     get_fnames,
+    get_logger,
 )
-
 
 logger = get_logger()
 
@@ -33,9 +32,7 @@ fnames = get_fnames()
 fnames["ahn_dir"]
 fnames["ahn"] = next((fnames["ahn_dir"].glob(f"**/{AHN_FILE}")), None)
 if not fnames["ahn"]:
-    raise FileNotFoundError(
-        f"{AHN_FILE} not found in any (sub directory of) {fnames['ahn']}"
-    )
+    raise FileNotFoundError(f"{AHN_FILE} not found in any (sub directory of) {fnames['ahn']}")
 
 dfs = dict()
 dfs["clusters"] = gpd.read_file(fnames["clusters"]).set_index("CLUSTER_ID", drop=False)
@@ -74,10 +71,8 @@ for cluster in clusters:
     cluster_dir.mkdir(parents=True)
 
     # clip hoogteraster met clustergrens
-    logger.info(f"aanmaken hoogteraster")
-    with rxr.open_rasterio(
-        fnames["ahn"], mask_and_scale=True, chunks=True
-    ) as ahn_raster_interp:
+    logger.info("aanmaken hoogteraster")
+    with rxr.open_rasterio(fnames["ahn"], mask_and_scale=True, chunks=True) as ahn_raster_interp:
         ahn_raster_interp = ahn_raster_interp.rio.write_crs("EPSG:28992", inplace=True)
         ahn_clipped = ahn_raster_interp.rio.clip(
             cluster_select_df.geometry,
@@ -92,10 +87,8 @@ for cluster in clusters:
         ahn_raster = ahn_raster.astype(int)
 
     # clip waterlopen op basis van clustergrens
-    logger.info(f"aanmaken waterlopen-raster")
-    waterlopen_clipped_gdf = gpd.clip(
-        dfs["waterlopen"], dfs["clusters"].at[cluster, "geometry"]
-    )
+    logger.info("aanmaken waterlopen-raster")
+    waterlopen_clipped_gdf = gpd.clip(dfs["waterlopen"], dfs["clusters"].at[cluster, "geometry"])
 
     # creëer mask om ID van waterlopen in template raster te branden (verrasteren van waterlopen)
     waterlopen = make_geocube(
@@ -106,9 +99,7 @@ for cluster in clusters:
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
 
-    fnames["waterlopen_raster"] = cluster_dir.joinpath(
-        "waterlopen_verrasterd_GridId.tif"
-    )
+    fnames["waterlopen_raster"] = cluster_dir.joinpath("waterlopen_verrasterd_GridId.tif")
     waterlopen.rio.to_raster(fnames["waterlopen_raster"])
 
     # branden van a-waterlopen in hoogtekaart
@@ -123,9 +114,7 @@ for cluster in clusters:
     ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
 
     # branden van b-waterlopen in hoogtekaart
-    b_waterlopen_clipped_gdf = gpd.clip(
-        dfs["b_waterlopen"], dfs["clusters"].at[cluster, "geometry"]
-    )
+    b_waterlopen_clipped_gdf = gpd.clip(dfs["b_waterlopen"], dfs["clusters"].at[cluster, "geometry"])
 
     burn_layer = make_geocube(
         b_waterlopen_clipped_gdf,
@@ -142,7 +131,7 @@ for cluster in clusters:
     ahn_raster_nan.rio.to_raster(fnames["hoogteraster"])
 
     # maak raster met peilvakken met waarde CLUSTER_ID en schrijf weg zodat clustergrenzen worden gebruikt als peilgebiedsgrens
-    logger.info(f"aanmaken peilvak-raster")
+    logger.info("aanmaken peilvak-raster")
     peilvak = make_geocube(
         cluster_select_df,
         measurements=["CLUSTER_ID"],
@@ -159,7 +148,7 @@ for cluster in clusters:
     peilvak.rio.to_raster(fnames["peilvakken_raster"])
 
     # bereken
-    logger.info(f"bereken afwateringseenheden")
+    logger.info("bereken afwateringseenheden")
     fnames["afwateringseenheden"] = cluster_dir.joinpath("afwateringseenheden.gpkg")
     calculate_subcatchments(
         elevation_raster=fnames["hoogteraster"],
