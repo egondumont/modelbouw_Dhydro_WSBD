@@ -2,14 +2,13 @@
 from pathlib import Path
 
 import rasterio
+from afwateringseenheden.fnames import get_fnames()
 from rasterio.enums import Resampling
 from rasterio.fill import fillnodata
 
-from wbd_tools.fnames import load_env_to_dict
-
 cell_size = 2
 
-ahn_dir = Path(load_env_to_dict()["AHN_DIR"])
+ahn_dir = get_fnames()["ahn_dir"]
 # %%
 with rasterio.open(ahn_dir.joinpath("dtm_05m", "dtm_05m.vrt")) as src:
     scale_factor = cell_size / abs(src.res[0])

@@ -29,8 +29,8 @@ CLUSTERS: list[int] = []
 fnames = get_fnames()
 
 # add ahn from fnames
-fnames["ahn_dir"]
-fnames["ahn"] = next((fnames["ahn_dir"].glob(f"**/{AHN_FILE}")), None)
+fnames["rasters_dir"]
+fnames["ahn"] = next((fnames["rasters_dir"].glob(f"**/{AHN_FILE}")), None)
 if not fnames["ahn"]:
     raise FileNotFoundError(f"{AHN_FILE} not found in any (sub directory of) {fnames['ahn']}")
 

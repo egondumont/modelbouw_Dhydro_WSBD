@@ -47,27 +47,28 @@ def load_env_to_dict(env_file: Path | None = None):
 
 
 def get_fnames(
-    AFWATERINGSEENHEDEN_DIR: Path | None = None, MODELLEN_DIR: Path | None = None, RUN_DIMR_BAT: Path | None = None
+    AFWATERINGSEENHEDEN_DIR: Path | None = None,
+    MODELLEN_DIR: Path | None = None,
+    RUN_DIMR_BAT: Path = Path(
+        r"C:\Program Files\Deltares\D-HYDRO Suite 2024.03 1D2D\plugins\DeltaShell.Dimr\kernels\x64\bin\run_dimr.bat"
+    ),
+    RASTERS_DIR: Path | None = None,
 ) -> dict[Path]:
     """Get all fnames from"""
-    fnames = {k.lower(): v for k, v in locals().items()}
-    print(fnames)
+    kwargs = locals().copy()
+
+    # init fnames from env
     env = load_env_to_dict()
-    for variable, value in fnames.items():
+    fnames = {k.lower(): Path(v) for k, v in env.items()}
+
+    for variable, value in kwargs.items():
+        print(variable, value)
         # if not specified we read it from .env
         if value is None:
-            # raise ValueError if local is not in env
-            if variable.upper() not in env.keys():
-                if variable == "run_dimr_bat":
-                    fnames[variable] = Path(
-                        r"C:\Program Files\Deltares\D-HYDRO Suite 2024.03 1D2D\plugins\DeltaShell.Dimr\kernels\x64\bin\run_dimr.bat"
-                    )
-                else:
-                    raise ValueError(f"{variable.upper()} not specified as input nor in {find_env_file()}")
-            else:
-                fnames[variable] = Path(env[variable.upper()])
+            if variable.lower() not in fnames.keys():
+                raise ValueError(f"{variable.upper()} not specified as input nor in {find_env_file()}")
         else:
-            fnames[variable] = Path(value)
+            fnames[variable.lower()] = Path(value)
 
     # afwateringseenheden: all we read
     DATA_DIR = fnames["afwateringseenheden_dir"] / "data"
@@ -75,7 +76,6 @@ def get_fnames(
     fnames["a_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_A.shp")
     fnames["b_waterlopen"] = DATA_DIR.joinpath("waterlopen", "Legger_waterlopen_B.shp")
 
-    fnames["ahn_dir"] = DATA_DIR.joinpath("hoogtekaart")
     fnames["clusters"] = DATA_DIR.joinpath("clusters", "afwateringsgebieden_25m_15clusters_fixed.shp")
 
     # afwateringseenheden: all we write
@@ -92,7 +92,10 @@ def get_fnames(
     # modellen: all we write
     fnames["modellen_output"] = fnames["modellen_dir"] / "output"
 
-    return fnames
+    # rasters: all we read
+    fnames["ahn_dir"] = fnames["rasters_dir"] / "ahn"
+
+    return dict(sorted(fnames.items()))
 
 
 # %%
