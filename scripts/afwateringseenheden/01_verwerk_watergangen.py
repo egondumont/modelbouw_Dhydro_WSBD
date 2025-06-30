@@ -70,7 +70,6 @@ dfs["waterloopsegmenten"] = split_lines_to_points(
 
 # %%
 # bepalen connectiepunten
-
 logger.info("bepalen connectiepunten")
 
 dfs["connecties"] = get_line_connections(lines_gdf=dfs["waterloopsegmenten"], points_gdf=dfs["objecten"], tolerance=5)
@@ -79,18 +78,16 @@ dfs["connecties"] = get_line_connections(lines_gdf=dfs["waterloopsegmenten"], po
 logger.info("vinden verbonden b-waterlopen")
 
 dfs["b_waterlopen"] = gpd.read_file(fnames["b_waterlopen"], engine="pyogrio", bbox=bbox)[["Code_objec", "geometry"]]
-
-
 dfs["b_waterlopen"] = connecting_secondary_lines(
-    lines_gdf=dfs["a_waterlopen"], secondary_lines_gdf=dfs["b_waterlopen"], tolerance=1
+    lines_gdf=dfs["waterloopsegmenten"], secondary_lines_gdf=dfs["b_waterlopen"], tolerance=10
 )
 
 
 # %%
 # Resultaten wegschrijven als lagen in GeoPackage
 logger.info("wegschrijven resultaten")
-WRITE_LAYERS = ["objecten", "waterloopsegmenten", "connecties", "b_waterlopen"]
 
+WRITE_LAYERS = ["objecten", "waterloopsegmenten", "connecties", "b_waterlopen"]
 for layer in WRITE_LAYERS:
     if layer in dfs.keys():
         dfs[layer].to_file(fnames["waterlopen_verwerkt"], layer=layer, index=True)

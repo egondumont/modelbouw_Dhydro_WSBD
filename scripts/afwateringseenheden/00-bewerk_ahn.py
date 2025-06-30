@@ -10,7 +10,7 @@ cell_size = 2
 
 ahn_dir = get_fnames()["ahn_dir"]
 # %%
-with rasterio.open(ahn_dir.joinpath("dtm_05m", "dtm_05m.vrt")) as src:
+with rasterio.open(ahn_dir.joinpath("ahn5_05_05", "ahn.vrt")) as src:
     scale_factor = cell_size / abs(src.res[0])
     new_height = int(src.height / scale_factor)
     new_width = int(src.width / scale_factor)
@@ -37,3 +37,5 @@ with rasterio.open(ahn_dir.joinpath("dtm_05m", "dtm_05m.vrt")) as src:
     with rasterio.open(ahn_dir.joinpath("dtm_2m.tif"), "w+", **profile) as dst:
         dst.write(resampled_data)
         dst.scales = scales
+
+# %%

@@ -1,4 +1,7 @@
-# %%
+# %% Inladen van AHN data naar een vrt. AHN data wordt door geo gedownload.
+# De data wordt in verschillende tegels (vlakjes) opgeslagen en met deze code gezamelijk opgeslagen in 1 vrt.
+# Het daadwerkelijk samenvoegen van de tegels in 1 geotiff wordt gedaan in de code 00-bewerk_ahn.
+
 from pathlib import Path
 
 from osgeo import gdal
