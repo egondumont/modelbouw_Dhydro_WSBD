@@ -11,21 +11,22 @@ Vragen en opmerkingen met betrekking tot dit script kun je mailen aan jeroen.win
 import os
 
 os.environ["USE_PYGEOS"] = "0"
-import sys
 import json
-import numpy as np
-import geopandas as gpd
-import pandas as pd
-from shapely import ops
-from wbd_tools.tohydamogml.gml import Gml
-from wbd_tools.tohydamogml.gpkg import Gpkg
-from wbd_tools.tohydamogml.read_database import read_filegdb
-from wbd_tools import attribute_functions
 import logging
 from datetime import datetime
-from shapely.geometry import Polygon, MultiPolygon
 
-pd.set_option('future.no_silent_downcasting', True)
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+from shapely import ops
+from shapely.geometry import Point, Polygon
+
+from wbd_tools import attribute_functions
+from wbd_tools.tohydamogml.gml import Gml
+from wbd_tools.tohydamogml.read_database import read_filegdb
+
+pd.set_option("future.no_silent_downcasting", True)
+
 
 class HydamoObject:
     """
@@ -62,9 +63,7 @@ class HydamoObject:
         self._report_dir = report_dir
         self._read_attributes_to_dicts(obj)
 
-        if not os.path.dirname(
-            obj["source"]["path"]
-        ):  # if only a filename is specified, without directory...
+        if not os.path.dirname(obj["source"]["path"]):  # if only a filename is specified, without directory...
             obj["source"]["path"] = os.path.join(
                 os.path.dirname(self._report_dir), obj["source"]["path"]
             )  # it's assumed that the file is in the current output folder of tohydamogml
@@ -140,9 +139,7 @@ class HydamoObject:
         if self.obj["geometry"]["func"]:
             func = getattr(attribute_functions, self.obj["geometry"]["func"])
             if self.obj["geometry"]["one2one"]:
-                self.gdf["geometry"] = pd.DataFrame(
-                    data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)}
-                )
+                self.gdf["geometry"] = pd.DataFrame(data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)})
             else:
                 self.gdf = func(damo_gdf=gdf_src, obj=self.obj)
 
@@ -161,20 +158,16 @@ class HydamoObject:
             for key, value in self.fill_na.items():
                 if "geometry" in self.gdf.columns:
                     self.gdf.loc[value, [key, "geometry"]].to_file(
-                        os.path.join(
-                            self.output_folder, f"fill-na_{self.objectname}_{key}.gpkg"
-                        ),
+                        os.path.join(self.output_folder, f"fill-na_{self.objectname}_{key}.gpkg"),
                         driver="GPKG",
                     )
                 else:
-                    self.gdf.loc[value, key].to_csv(
-                        os.path.join(self.output_folder, f"fill_na_{key}.csv")
-                    )
+                    self.gdf.loc[value, key].to_csv(os.path.join(self.output_folder, f"fill_na_{key}.csv"))
 
         if self.obj["geometry"]["drop"] is True:
             self.gdf = self.gdf.drop(["geometry"], axis=1)
             self.gdf.crs = None
-        else:
+        elif hasattr(self.gdf, "geometry"):
             self._linemerge()
             self._multipoint_to_point()
 
@@ -252,9 +245,7 @@ class HydamoObject:
         Get GML
         """
         if self._gml is None:
-            self._gml = Gml(
-                self.gdf.reset_index(), self.objectname, outputfolder=self._report_dir
-            )
+            self._gml = Gml(self.gdf.reset_index(), self.objectname, outputfolder=self._report_dir)
         return self._gml
 
     def print_gml(self):
@@ -273,9 +264,7 @@ class HydamoObject:
         """
         Write GML file to .gml file
         """
-        return self.gml.write(
-            export_folder, ignore_errors, skip_validation, suffix=suffix
-        )
+        return self.gml.write(export_folder, ignore_errors, skip_validation, suffix=suffix)
 
     def write_gpkg(self, export_folder):
         """
@@ -283,9 +272,12 @@ class HydamoObject:
 
         """
 
-        return self.gdf.to_file(
-            os.path.join(export_folder, f"{self.objectname}.gpkg"), driver="GPKG"
-        )
+        # Add dummy geometry to objects without geometry, so they can written to a geopackage
+        if not hasattr(self.gdf, "geometry"):
+            breda_coordinates = [Point(113164, 397131 + x * 10) for x in range(self.gdf.shape[0])]
+            self.gdf = gpd.GeoDataFrame(self.gdf, geometry=breda_coordinates, crs="EPSG:28992")
+
+        return self.gdf.to_file(os.path.join(export_folder, f"{self.objectname}.gpkg"), driver="GPKG")
 
     def validatie_gpkg(self):
         """
@@ -322,14 +314,12 @@ class HydamoObject:
         :param mask: shapely polygon. Only the features that intersect the polygon will be loaded
         :return: geodataframe
         """
-        if (
-            os.path.splitext(filegdb)[1] == ".gdb"
-        ):  # If the database is a file geodatabase
+        if os.path.splitext(filegdb)[1] == ".gdb":  # If the database is a file geodatabase
             gdf = read_filegdb(filegdb, layer)
         else:  # If the database is of a different type, try opening with geopandas.read_file
             gdf = gpd.read_file(filegdb, layer=layer)
 
-        if mask and (not gdf.geometry.isna().any()):
+        if mask and hasattr(gdf, "geometry"):
             gdf = gdf[gdf.intersects(mask)]
         if filter_dict:
             gdf = self._filter_gdf(gdf, filter_dict, filter_type)
@@ -485,7 +475,7 @@ class HydamoObject:
         """
         Remove all the columns of the dataframe except the geometry
         """
-        gdf = gdf[["geometry"]].copy()
+        gdf = gdf[["geometry"]].copy() if hasattr(gdf, "geometry") else gdf[[]].copy()
 
         # Raise error if geodataframe has no rows
         if len(gdf) == 0:
@@ -508,6 +498,7 @@ class HydamoObject:
 
         tmp_attr = self._fill_na_if_required(attr, tmp_attr)
         tmp_attr = self._set_datatype(attr, tmp_attr)
+        tmp_attr.set_index(src_gdf.index, inplace=True)
 
         self.gdf[attr] = tmp_attr
 
@@ -530,23 +521,18 @@ class HydamoObject:
         """
         Convert multipoint geometry to point geometry
         """
-        self.gdf["geometry"] = self.gdf["geometry"].apply(
-            lambda x: x[0] if x.geom_type == "MultiPoint" else x
-        )
+        self.gdf["geometry"] = self.gdf["geometry"].apply(lambda x: x[0] if x.geom_type == "MultiPoint" else x)
 
     def _fill_na_if_required(self, attr, tmp_attr):
         """Fill NA values if attribute is required"""
         if self.attr_required[attr]:
             empty_attr = tmp_attr[tmp_attr[attr].isna()]
             logging.info(
-                f"Default waarde van {attr} ({self.attr_dummy[attr]}) aangenomen voor: "
-                f"{list(empty_attr.index)}"
+                f"Default waarde van {attr} ({self.attr_dummy[attr]}) aangenomen voor: {list(empty_attr.index)}"
             )
             if len(empty_attr) > 0:
                 self.fill_na[attr] = list(empty_attr.index)
-            tmp_attr[attr] = tmp_attr[attr].apply(
-                lambda x: self.attr_dummy[attr] if pd.isnull(x) else x
-            )
+            tmp_attr[attr] = tmp_attr[attr].apply(lambda x: self.attr_dummy[attr] if pd.isnull(x) else x)
         else:
             #       tmp_attr = tmp_attr[tmp_attr[attr].notna()]
             tmp_attr[attr] = tmp_attr[attr].fillna(value=-999)

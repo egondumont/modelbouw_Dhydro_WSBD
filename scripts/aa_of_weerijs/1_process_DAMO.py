@@ -68,6 +68,7 @@ if activities["laden"]:
             "gemaal",
             "pomp",
             "stuw",
+            "sturing",
         ]
     )
     logging.info("finished data loading")
