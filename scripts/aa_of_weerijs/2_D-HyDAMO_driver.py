@@ -18,7 +18,6 @@ import os
 import shutil
 import sys
 import warnings
-from datetime import datetime
 from pathlib import Path
 
 import contextily as cx
@@ -29,7 +28,7 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon
 
-from wbd_tools.fnames import get_fnames
+from wbd_tools.fnames import get_fnames, get_output_dir
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -112,7 +111,9 @@ data_path = Path()
 fnames = get_fnames()
 modelnaam = Path(__file__).parent.name
 
-output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
+# met date=None zoeken we de laatste output-dir
+output_dir = get_output_dir(model_name=modelnaam, date=None)
+print(f"output_dir: {output_dir}")
 output_path = output_dir / "dhydro"
 
 if output_path.exists():
