@@ -1,14 +1,13 @@
-import shapely
-import math
-from shapely.geometry import LineString, Point
 import logging
+import math
+
 import geopandas as gpd
-from wbd_tools.tohydamogml.read_database import read_filegdb
+import shapely
 import tqdm
-import os
+from shapely.geometry import LineString, Point
 
 
-def make_profile(damo_gdf, obj=None):
+def _make_profile(damo_gdf, obj=None):
     data = []
     # new_points = gpd.GeoDataFrame(geometry='geometry',crs = 'EPSG:28992')
     for i, row in tqdm.tqdm(damo_gdf.iterrows(), total=len(damo_gdf)):
@@ -120,15 +119,11 @@ def _make_xyz(
     # Set up basic profile parameters: bottom width & total width based on talud
     if math.isnan(bottom_width):
         bottom_width = 2
-        logging.info(
-            f"Profielen maken: {row['CODE']} geen bodembreedte gevonden, bodembreedte op 2 gezet."
-        )
+        logging.info(f"Profielen maken: {row['CODE']} geen bodembreedte gevonden, bodembreedte op 2 gezet.")
     total_width = bottom_width + total_depth * talud_l + total_depth * talud_r
     if math.isnan(total_width):
         total_width = bottom_width + 2 * total_depth * 2
-        logging.info(
-            f"Profielen maken: {row['CODE']} geen taluds gevonden, talud op 2 gezet."
-        )
+        logging.info(f"Profielen maken: {row['CODE']} geen taluds gevonden, talud op 2 gezet.")
 
     upper_level = bottom_level + total_depth
 
@@ -146,50 +141,13 @@ def _make_xyz(
 
     left_inner = baseline.parallel_offset(bottom_width / 2, "left")
     right_inner = baseline.parallel_offset(bottom_width / 2, "right")
-    left_inner_point = shapely.ops.transform(
-        lambda x, y: (x, y, bottom_level), Point(left_inner.coords[0])
-    )
-    right_inner_point = shapely.ops.transform(
-        lambda x, y: (x, y, bottom_level), Point(right_inner.coords[0])
-    )
+    left_inner_point = shapely.ops.transform(lambda x, y: (x, y, bottom_level), Point(left_inner.coords[0]))
+    right_inner_point = shapely.ops.transform(lambda x, y: (x, y, bottom_level), Point(right_inner.coords[0]))
 
     left_outer = baseline.parallel_offset(total_width / 2, "left")
     right_outer = baseline.parallel_offset(total_width / 2, "right")
-    left_outer_point = shapely.ops.transform(
-        lambda x, y: (x, y, upper_level), Point(left_outer.coords[0])
-    )
-    right_outer_point = shapely.ops.transform(
-        lambda x, y: (x, y, upper_level), Point(right_outer.coords[0])
-    )
+    left_outer_point = shapely.ops.transform(lambda x, y: (x, y, upper_level), Point(left_outer.coords[0]))
+    right_outer_point = shapely.ops.transform(lambda x, y: (x, y, upper_level), Point(right_outer.coords[0]))
 
-    profile_line = LineString(
-        [left_outer_point, left_inner_point, right_inner_point, right_outer_point]
-    )
+    profile_line = LineString([left_outer_point, left_inner_point, right_inner_point, right_outer_point])
     return profile_line
-
-
-if __name__ == "__main__":
-    # 2023-03-30 dit is oud:
-    mask = gpd.read_file(
-        r"G:\WS_KenA\Per_persoon\Egon\Git\modelbouwDhydroWSBD\projectgebied\AaOfWeerijs_deelVanHoofdloop.shp"
-    )
-    print(r"reading geodatabase...")
-
-    # gdf = read_featureserver(r"https://maps.brabantsedelta.nl/arcgis/rest/services/Extern/Legger_Vigerend/FeatureServer",
-    #                         layer_index="18")
-    # gdf = gdf[gdf.drop(columns='SHAPE').intersects(mask.unary_union)]
-
-    gdf = read_filegdb(
-        filegdb=r"d:\\repositories\\modelbouw_Dhydro_WSBD\\json\\dwarsprofiel.json",
-        layer="LEGGER_VASTGESTELD_WATERLOOP_CATEGORIE_A",
-    )
-    gdf = gdf[gdf.intersects(mask.unary_union)]
-
-    print(r"feature server read!")
-    # gdf = gpd.clip(gdf, mask)
-    new_points = make_profile(gdf)
-    folder = os.path.join("output/dwarsprofiel")
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    new_points.to_file(r"output/dwarsprofiel/dwp_punten_2.gpkg", driver="GPKG")
-    new_points.to_file(r"output/dwarsprofiel/dwp_punten_2.shp")
