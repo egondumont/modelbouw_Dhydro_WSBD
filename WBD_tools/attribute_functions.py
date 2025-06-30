@@ -3,53 +3,61 @@ Functies specifiek voor Brabantse Delta
 """
 
 # import arcpy
+import logging  # noqa: I001
 import math
-import numpy as np
-import geopandas as gpd
-import pandas as pd
-from shapely.geometry import LineString, Point
-from wbd_tools.tohydamogml.domeinen_damo_2_2 import *
-from wbd_tools.tohydamogml.config import *
-import logging
-import shapely
 from random import randint
-import sys
-from wbd_tools.dwarsprofiel_xyz import make_profile, _make_xyz
+import numpy as np
+import pandas as pd
+from shapely.geometry import LineString
 
+from wbd_tools.dwarsprofiel_xyz import _make_profile
+from wbd_tools.tohydamogml.config import *
+from wbd_tools.tohydamogml.domeinen_damo_2_2 import *
 
 # Columns in DAMO to search for id of related object
-DM_COL_CODEGERELATEERD_OBJECT = ['COUPUREID', 'DUIKERSIFONHEVELID', 'FLEXIBELEWATERKERINGID',
-                                                          'GEMAALID', 'SLUISID', 'STUWID',
-                                                          'REGENWATERBUFFERCOMPARTIMENTID', 'TUNNELID',
-                                                          'VISPASSAGEID']
+DM_COL_CODEGERELATEERD_OBJECT = [
+    "COUPUREID",
+    "DUIKERSIFONHEVELID",
+    "FLEXIBELEWATERKERINGID",
+    "GEMAALID",
+    "SLUISID",
+    "STUWID",
+    "REGENWATERBUFFERCOMPARTIMENTID",
+    "TUNNELID",
+    "VISPASSAGEID",
+]
 
 DM_LAYERS = {
-                "hydroobject": "HydroObject",
-                "stuw": "Stuw",
-                "afsluitmiddel": "Afsluitmiddel",
-                "doorstroomopening":"Doorstroomopening",
-                "duikersifonhevel": "DuikerSifonHevel",
-                "gemaal": "Gemaal",
-                "brug": "Brug",
-                "bodemval": "Bodemval",
-                "aquaduct": "Aquaduct",
-                "afvoergebied": "AfvoergebiedAanvoergebied"
+    "hydroobject": "HydroObject",
+    "stuw": "Stuw",
+    "afsluitmiddel": "Afsluitmiddel",
+    "doorstroomopening": "Doorstroomopening",
+    "duikersifonhevel": "DuikerSifonHevel",
+    "gemaal": "Gemaal",
+    "brug": "Brug",
+    "bodemval": "Bodemval",
+    "aquaduct": "Aquaduct",
+    "afvoergebied": "AfvoergebiedAanvoergebied",
 }
 
 COL_OBJECTID = "OBJECTID"
 
 
+def make_profile(damo_gdf, obj=None):
+    return _make_profile(damo_gdf)
+
+
 def stuw_code(damo_gdf=None, obj=None):
-    """"
+    """ "
     Zet naam van TYPESTUW om naar attribuutwaarde
     """
-    data = [_stuw_code(name) for name in damo_gdf['SOORTSTUW']]
+    data = [_stuw_code(name) for name in damo_gdf["SOORTSTUW"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
 
 def _stuw_code(current_name=None):
-    """"
+    """ "
     Zoekt door TYPESTUW naar de naam van het stuwtype, geeft attribuut waarde uit DAMO
     """
     if current_name not in TYPESTUW.values():
@@ -60,16 +68,16 @@ def _stuw_code(current_name=None):
 
 
 def stuw_regelbaarheid(damo_gdf=None, obj=None):
-    """"
+    """ "
     Zet naam van TYPEREGELBAARHEID om naar attribuutwaarde
     """
-    data = [_stuw_regelbaarheid(name) for name in damo_gdf['SOORTREGELBAARHEID']]
+    data = [_stuw_regelbaarheid(name) for name in damo_gdf["SOORTREGELBAARHEID"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
 
 def _stuw_regelbaarheid(current_name=None):
-    """"
+    """ "
     Zoekt door TYPEREGELBAARHEID naar de naam van het stuwtype, geeft attribuut waarde uit DAMO
     """
     if current_name not in TYPEREGELBAARHEID.values():
@@ -79,27 +87,36 @@ def _stuw_regelbaarheid(current_name=None):
             return i
 
 
-def stuw_kruinbreedte(damo_gdf=None, obj=None, damo_kruinbreedte="KRUINBREEDTE", damo_doorstroombreedte="DOORSTROOMBREEDTE",
-                      damo_kruinvorm="WS_KRUINVORM"):
+def stuw_kruinbreedte(
+    damo_gdf=None,
+    obj=None,
+    damo_kruinbreedte="KRUINBREEDTE",
+    damo_doorstroombreedte="DOORSTROOMBREEDTE",
+    damo_kruinvorm="WS_KRUINVORM",
+):
     """
     als KRUINBREEDTE is NULL en WS_KRUINVORM =3 (rechthoek) dan KRUINBREEDTE = DOORSTROOMBREEDTE
     """
     return damo_gdf.apply(
         lambda x: _stuw_get_kruinbreedte_rechthoek(x[damo_kruinbreedte], x[damo_kruinvorm], x[damo_doorstroombreedte]),
-        axis=1)
+        axis=1,
+    )
 
 
-def stuw_laagstedoorstroombreedte(damo_gdf=None, obj=None, damo_doorstroombreedte="DOORSTROOMBREEDTE",
-                                  damo_kruinvorm="WS_KRUINVORM"):
+def stuw_laagstedoorstroombreedte(
+    damo_gdf=None, obj=None, damo_doorstroombreedte="DOORSTROOMBREEDTE", damo_kruinvorm="WS_KRUINVORM"
+):
     """
     als LAAGSTEDOORSTROOMHOOGTE is NULL en WS_KRUINVORM =3 (rechthoek) dan LAAGSTEDOORSTROOMBREEDTE = DOORSTROOMBREEDTE
     """
     return damo_gdf.apply(
-        lambda x: _stuw_get_laagstedoorstroombreedte_rechthoek(x[damo_kruinvorm], x[damo_doorstroombreedte]), axis=1)
+        lambda x: _stuw_get_laagstedoorstroombreedte_rechthoek(x[damo_kruinvorm], x[damo_doorstroombreedte]), axis=1
+    )
 
 
-def _stuw_get_kruinbreedte_rechthoek(kruinbreedte: float, kruinvorm: float, doorstroombreedte: float,
-                                     kruinvorm_rechthoek=[3.0]):
+def _stuw_get_kruinbreedte_rechthoek(
+    kruinbreedte: float, kruinvorm: float, doorstroombreedte: float, kruinvorm_rechthoek=[3.0]
+):
     """
     als KRUINBREEDTE is NULL en WS_KRUINVORM =3 (rechthoek) dan KRUINBREEDTE = DOORSTROOMBREEDTE
     """
@@ -110,7 +127,9 @@ def _stuw_get_kruinbreedte_rechthoek(kruinbreedte: float, kruinvorm: float, door
         return kruinbreedte
 
 
-def _stuw_get_laagstedoorstroombreedte_rechthoek(kruinvorm: float, doorstroombreedte: float, kruinvorm_rechthoek=[3.0]):
+def _stuw_get_laagstedoorstroombreedte_rechthoek(
+    kruinvorm: float, doorstroombreedte: float, kruinvorm_rechthoek=[3.0]
+):
     """
     als LAAGSTEDOORSTROOMHOOGTE is NULL en WS_KRUINVORM =3 (rechthoek) dan LAAGSTEDOORSTROOMBREEDTE = DOORSTROOMBREEDTE
     """
@@ -120,8 +139,10 @@ def _stuw_get_laagstedoorstroombreedte_rechthoek(kruinvorm: float, doorstroombre
     else:
         return np.nan
 
+
 def duikerhevelsifon_soortkokervormigeconstructiecode(damo_gdf=None, obj=None, damo_typekruising="TYPEKRUISING"):
     return damo_gdf.apply(lambda x: _duikerhevelsifon_get_skvccode(x[damo_typekruising]), axis=1)
+
 
 def _duikerhevelsifon_get_skvccode(damo_typekruising):
     """
@@ -136,17 +157,18 @@ def _duikerhevelsifon_get_skvccode(damo_typekruising):
     else:
         return 999
 
+
 def duikersifonhevel_vorm(damo_gdf=None, obj=None):
-    """"
+    """ "
     Zet naam van VORMKOKER om naar attribuutwaarde
     """
-    data = [_duikersifonhevel_vorm(name) for name in damo_gdf['VORMKOKER']]
+    data = [_duikersifonhevel_vorm(name) for name in damo_gdf["VORMKOKER"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
 
 def _duikersifonhevel_vorm(current_vorm):
-    """"
+    """ "
     Zoekt door VORMKOKER naar de naam van de vorm, geeft attribuut waarde uit DAMO
     """
     if current_vorm not in VORMKOKER.values():
@@ -159,6 +181,7 @@ def _duikersifonhevel_vorm(current_vorm):
 def obj_soortmateriaal(damo_gdf=None, obj=None, damo_soortmateriaal="SOORTMATERIAAL"):
     return damo_gdf.apply(lambda x: _obj_get_soortmateriaal(x[damo_soortmateriaal]), axis=1)
 
+
 def _obj_get_soortmateriaal(materiaalcode):
     """Return Strickler Ks waarde
     Bron: Ven te Chow - Open channel hydraulics tbl 5-6"""
@@ -169,16 +192,16 @@ def _obj_get_soortmateriaal(materiaalcode):
 
 
 def afsluitmiddel_soort(damo_gdf=None, obj=None):
-    """"
+    """ "
     Zet naam van AFSLUITWIJZEN om naar attribuutwaarde
     """
-    data = [_afsluitmiddel_soort(name) for name in damo_gdf['SOORTAFSLUITMIDDEL']]
+    data = [_afsluitmiddel_soort(name) for name in damo_gdf["SOORTAFSLUITMIDDEL"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
 
 def _afsluitmiddel_soort(current_soort):
-    """"
+    """ "
     Zoekt door AFSLUITWIJZEN naar de naam van de vorm, geeft attribuut waarde uit DAMO
     """
     if current_soort not in SOORTAFSLUITMIDDEL.values():
@@ -187,17 +210,18 @@ def _afsluitmiddel_soort(current_soort):
         if soort == current_soort:
             return i
 
+
 def afsluitmiddel_regelbaarheid(damo_gdf=None, obj=None):
-    """"
+    """ "
     Zet naam van AFSLUITREGELBAARHEID om naar attribuutwaarde
     """
-    data = [_afsluitmiddel_regelbaarheid(name) for name in damo_gdf['SOORTREGELBAARHEID']]
+    data = [_afsluitmiddel_regelbaarheid(name) for name in damo_gdf["SOORTREGELBAARHEID"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
 
 def _afsluitmiddel_regelbaarheid(current_soort):
-    """"
+    """ "
     Zoekt door TYPEREGELBAARHEID naar de naam van het soort regelbaarheid, geeft attribuut waarde uit DAMO
     """
     if current_soort not in TYPEREGELBAARHEID.values():
@@ -206,11 +230,13 @@ def _afsluitmiddel_regelbaarheid(current_soort):
         if soort == current_soort:
             return i
 
+
 def gemaal_rename_index(damo_gdf=None, obj=None):
     """
     Hernoem gemaal index met de prefix: "GEM_"
     """
-    return ["GEM_"+code for code in damo_gdf.index]
+    return ["GEM_" + code for code in damo_gdf.index]
+
 
 def dwp_rename_index_boven(damo_gdf=None, obj=None):
     """
@@ -218,122 +244,148 @@ def dwp_rename_index_boven(damo_gdf=None, obj=None):
     """
     return [f"DWP_boven_{code}" for code in damo_gdf.index]
 
+
 def dwp_rename_index_beneden(damo_gdf=None, obj=None):
     """
     Hernoem DWP index op basis van legger waterloop code met prefix "DWP_boven"
     """
     return [f"DWP_beneden_{code}" for code in damo_gdf.index]
 
+
 def brug_pt_to_line(damo_gdf=None, obj=None):
-    return damo_gdf.apply(lambda x: _brug_profile_geometry(x, lijn_lengte="WS_LENGTEBRUG" ,rotate_degree=0), axis=1)
+    return damo_gdf.apply(lambda x: _brug_profile_geometry(x, lijn_lengte="WS_LENGTEBRUG", rotate_degree=0), axis=1)
 
 
 def brug_profile_geometry(damo_gdf=None, obj=None):
     return damo_gdf.apply(lambda x: _brug_profile_geometry(x, lijn_lengte="WS_BREEDTEBRUG", rotate_degree=90), axis=1)
 
 
-def _brug_profile_geometry(row, direction="RICHTING", lijn_lengte="WS_LENGTEBRUG", rotate_degree=0, default_width=1, default_dir=0):
+def _brug_profile_geometry(
+    row, direction="RICHTING", lijn_lengte="WS_LENGTEBRUG", rotate_degree=0, default_width=1, default_dir=0
+):
     """
     Convert bridge point to line
     direction in degrees"""
-    dir = math.radians(row[direction]+rotate_degree) if not pd.isnull(row[direction]) else math.radians(default_dir+rotate_degree)
+    dir = (
+        math.radians(row[direction] + rotate_degree)
+        if not pd.isnull(row[direction])
+        else math.radians(default_dir + rotate_degree)
+    )
     length = row[lijn_lengte] if not pd.isnull(row[lijn_lengte]) else default_width
 
     dx = math.cos(dir) * 0.5 * length
     dy = math.sin(dir) * 0.5 * length
 
-    return LineString([(row.geometry.x-float(dx), row.geometry.y-float(dy)),(row.geometry.x+float(dx), row.geometry.y+float(dy))])
+    return LineString(
+        [
+            (row.geometry.x - float(dx), row.geometry.y - float(dy)),
+            (row.geometry.x + float(dx), row.geometry.y + float(dy)),
+        ]
+    )
+
 
 def dwp_upstream(damo_gdf=None, obj=None):
-    return damo_gdf.apply(lambda x: _make_dwp(x, 'upstream', profile_dist=5), axis=1)
+    return damo_gdf.apply(lambda x: _make_dwp(x, "upstream", profile_dist=5), axis=1)
+
 
 def dwp_downstream(damo_gdf=None, obj=None):
-    return damo_gdf.apply(lambda x: _make_dwp(x, 'downstream', profile_dist=5), axis=1)
+    return damo_gdf.apply(lambda x: _make_dwp(x, "downstream", profile_dist=5), axis=1)
 
-def _make_dwp(row, up_or_down: str = 'upstream', profile_dist: float = 5):
-    width = row['WS_BODEMBREEDTE_L'] + 2 * row['WS_TALUD_LINKS_L'] + 2 * row['WS_TALUD_RECHTS_L']
-    l = row['geometry'].length
-    logging.info(f'DWP maken: {up_or_down}, {row["CODE"]}, lengte: {l}, breedte: {width}')
+
+def _make_dwp(row, up_or_down: str = "upstream", profile_dist: float = 5):
+    width = row["WS_BODEMBREEDTE_L"] + 2 * row["WS_TALUD_LINKS_L"] + 2 * row["WS_TALUD_RECHTS_L"]
+    l = row["geometry"].length
+    logging.info(f"DWP maken: {up_or_down}, {row['CODE']}, lengte: {l}, breedte: {width}")
     if l > (profile_dist * 2 + 1):
         dist1 = profile_dist
         dist2 = profile_dist - 1
     else:
         dist1 = l * 0.2
         dist2 = l * 0.4
-    if up_or_down.lower().startswith('down'):
+    if up_or_down.lower().startswith("down"):
         dist1 = dist1 * -1
         dist2 = dist2 * -1
     if math.isnan(width):
         width = 6
-        logging.info(f"Normgeparametriseerdprofiel maken: {row['CODE']} er kon geen breedte gemaakt worden, geometrie wordt 6 meter breed")
-    point1 = row['geometry'].interpolate(dist1)
-    point2 = row['geometry'].interpolate(dist2)
+        logging.info(
+            f"Normgeparametriseerdprofiel maken: {row['CODE']} er kon geen breedte gemaakt worden, geometrie wordt 6 meter breed"
+        )
+    point1 = row["geometry"].interpolate(dist1)
+    point2 = row["geometry"].interpolate(dist2)
     baseline = LineString([point1, point2])
-    left = baseline.parallel_offset(width/2, 'left')
-    right = baseline.parallel_offset(width/2, 'right')
+    left = baseline.parallel_offset(width / 2, "left")
+    right = baseline.parallel_offset(width / 2, "right")
     left_point = left.coords[0]
     right_point = right.coords[-1]
     profile_line = LineString([left_point, right_point])
     return profile_line
 
+
 def insteek_hoogte_bovenstrooms(damo_gdf=None, obj=None):
-    data = [bodem + 2 for bodem in damo_gdf['WS_BH_BOVENSTROOMS_L']]
+    data = [bodem + 2 for bodem in damo_gdf["WS_BH_BOVENSTROOMS_L"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
 
 def insteek_hoogte_benedenstrooms(damo_gdf=None, obj=None):
-    data = [bodem + 2 for bodem in damo_gdf['WS_BH_BENEDENSTROOMS_L']]
+    data = [bodem + 2 for bodem in damo_gdf["WS_BH_BENEDENSTROOMS_L"]]
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
+
 def replace_crestlevel(damo_gdf=None, obj=None):
-    col_sp = 'rel_Streef P'
+    col_sp = "rel_Streef P"
     data = []
     for i, row in damo_gdf.iterrows():
         if not math.isnan(row[col_sp]):
             data.append(row[col_sp] - 0.05)
         else:
-            data.append(row['LAAGSTEDOORSTROOMHOOGTE'])
+            data.append(row["LAAGSTEDOORSTROOMHOOGTE"])
     df = pd.Series(data=data, index=damo_gdf.index)
     return df
 
-def rand_index(damo_gdf=None, obj=None):
-    return ["rand_"+str(i) for i in damo_gdf.index]
 
-def nen3610id(damo_gdf=None, obj=None, waterschap = "NL.WBHCODE.25"):
-    """"
+def rand_index(damo_gdf=None, obj=None):
+    return ["rand_" + str(i) for i in damo_gdf.index]
+
+
+def nen3610id(damo_gdf=None, obj=None, waterschap="NL.WBHCODE.25"):
+    """ "
     vult de code in en waterschaps id en zet om naar nen3610id
     """
-    object = obj['object']
-    s1 = waterschap #hardcoded voor waterschap Brabantse Delta
+    object = obj["object"]
+    s1 = waterschap  # hardcoded voor waterschap Brabantse Delta
     # data = [damo_gdf.index[a] for a in damo_gdf['index']]
-    data = [a for a in damo_gdf['index']]
-    df = pd.Series(data = data, index=damo_gdf.index)
-    df = '{}.{}.'.format(s1, object) + df.astype(str)
+    data = [a for a in damo_gdf["index"]]
+    df = pd.Series(data=data, index=damo_gdf.index)
+    df = "{}.{}.".format(s1, object) + df.astype(str)
     return df
 
+
 def globalid(damo_gdf=None, obj=None):
-    """"
+    """ "
     Maakt globalid volgens DAMO-formatspecificatie.
     Geeft een rij een string die op de hele wereld uniek is
     """
 
     def b(x):
         def a(c):
-            b = 65535 # input for random hexadecimal number of 4*c digits. 65535=16**4
-            return f"{randint(0, b):04X}"*c # convert to random hexadecimal number (:X means hexadecimal with capital letters)
-        x = f"{{{a(2)}-{a(1)}-{a(1)}-{a(1)}-{a(3)}}}"
-        return x  
+            b = 65535  # input for random hexadecimal number of 4*c digits. 65535=16**4
+            return (
+                f"{randint(0, b):04X}" * c
+            )  # convert to random hexadecimal number (:X means hexadecimal with capital letters)
 
-    data = [a for a in damo_gdf['index']]
-    df = pd.Series(data = data, index=damo_gdf.index)
+        x = f"{{{a(2)}-{a(1)}-{a(1)}-{a(1)}-{a(3)}}}"
+        return x
+
+    data = [a for a in damo_gdf["index"]]
+    df = pd.Series(data=data, index=damo_gdf.index)
     df = df.apply(b)
     return df
 
 
-if __name__ == '__main__':
-    import sys
+if __name__ == "__main__":
+    pass
     # sys.path.append('../../..')
     # from tohydamogml.read_database import read_featureserver
     # waterlopen = read_featureserver('https://geoservices.brabantsedelta.nl/arcgis/rest/services/EXTERN/WEB_Beheerregister_Waterlopen_en_Kunstwerken/FeatureServer', '13')

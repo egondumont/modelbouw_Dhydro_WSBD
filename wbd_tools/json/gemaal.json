@@ -32,12 +32,12 @@
             "func": "nen3610id",
             "default": "99"
         },
-        {
+                {
             "name": "globalid",
             "type": "String",
             "required": false,
-            "src_col": "GLOBALID",
-            "func": "",
+            "src_col": "CODE",
+            "func": "gemaal_rename_index",
             "default": ""
         },
         {

@@ -19,7 +19,7 @@
         "mapping_col_rel": ""
     },
     "index": {
-        "name": "code",
+        "name": "globalid",
         "src_col": "CODE"
     },
     "attributes": [
@@ -32,19 +32,11 @@
             "default": "99"
         },
         {
-            "name": "globalid",
-            "type": "String",
-            "required": false,
-            "src_col": "",
-            "func": "globalid",
-            "default": ""
-        },
-        {
             "name": "gemaalid",
             "type": "String",
             "required": false,
-            "src_col": "GLOBALID",
-            "func": "",
+            "src_col": "CODE",
+            "func": "gemaal_rename_index",
             "default": ""
         },
         {
