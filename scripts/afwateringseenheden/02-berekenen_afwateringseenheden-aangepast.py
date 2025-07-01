@@ -14,7 +14,7 @@ from wbd_tools.afwateringseenheden import (
 )
 
 logger = get_logger()
-
+fnames = get_fnames()
 # %%
 # globals
 
@@ -22,14 +22,12 @@ AHN_FILE = "dtm_2m.tif"
 MAX_FILL_DEPTH = 5000
 # CLUSTERS: list[int] = []
 
-# %%
-
-# processen clusters
-# geef hier specifieke clusters op als je niet het hele waterschap wilt draaien
-fnames = get_fnames()
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # add ahn from fnames
 # fnames["rasters_dir"]
+logger.info("Bestanden ophalen")
+
 fnames["ahn"] = next((fnames["rasters_dir"].glob(f"**/{AHN_FILE}")), None)
 if not fnames["ahn"]:
     raise FileNotFoundError(f"{AHN_FILE} not found in any (sub directory of) {fnames['ahn']}")
@@ -50,7 +48,6 @@ dfs["b_waterlopen"] = gpd.read_file(
 )
 dfs["b_waterlopen"].loc[:, "burn_depth"] = MAX_FILL_DEPTH * 2
 
-
 # aanmaken directory
 process_dir = fnames["process_dir"]
 if process_dir.exists():
@@ -58,22 +55,49 @@ if process_dir.exists():
 process_dir.mkdir(parents=True)
 
 # ahn openen en omzetten naar int
+logger.info("AHN inladen")
 with rxr.open_rasterio(fnames["ahn"], mask_and_scale=True, chunks={"x": 2500, "y": 3250}) as ahn_raster_interp:
     ahn_raster_interp = ahn_raster_interp.rio.write_crs("EPSG:28992", inplace=True)
-    ahn_raster = ahn_raster_interp * 100
-    ahn_raster = ahn_raster.astype("int32")
+    ahn_raster = (ahn_raster_interp.chunk({"x": 2500, "y": 3250}) * 100).fillna(-9999).astype("int32")
+    ahn_raster.rio.to_raster("temp_int32.tif")
+    ahn_raster = rxr.open_rasterio("temp_int32.tif", chunks={"x": 2500, "y": 3250})
 
+ahn_raster.close()
+# Verrasteren van waterlopen als int32
+logger.info("Verrasteren waterlopen")
+
+# Belangrijk: je geeft rasterize_image mee met de juiste dtype
+waterlopen = make_geocube(
+    vector_data=dfs["waterlopen"],
+    measurements=["GridId"],
+    like=ahn_raster,
+    fill=0,
+    rasterize_function=partial(rasterize_image, all_touched=False, dtype="int32"),
+)
+
+# Zorg dat de waarden ook echt int32 zijn in de Dataset
+for var in waterlopen.data_vars:
+    waterlopen[var] = waterlopen[var].astype("int32")
+
+# Opslaan met compressie en windowed schrijven (geheugenefficiënt)
+fnames["waterlopen_raster"] = process_dir.joinpath("waterlopen_verrasterd_GridId.tif")
+waterlopen.rio.to_raster(fnames["waterlopen_raster"], dtype="int32", windowed=True, compress="deflate")
+
+
+# %% problemen met int 64
 # Verraster waterlopen
+logger.info("Verrasteren waterlopen")
 waterlopen = make_geocube(
     dfs["waterlopen"],
     measurements=["GridId"],
     like=ahn_raster,
     fill=0,
-    rasterize_function=partial(rasterize_image, all_touched=False),
+    rasterize_function=partial(rasterize_image, all_touched=False, dtype="int32"),
 )
 fnames["waterlopen_raster"] = process_dir.joinpath("waterlopen_verrasterd_GridId.tif")
-waterlopen.rio.to_raster(fnames["waterlopen_raster"])
+waterlopen.rio.to_raster(fnames["waterlopen_raster"], windowed=True)
 
+logger.info("Waterlopen in ahn branden")
 # Brand a-waterlopen in raster
 burn_layer = make_geocube(
     dfs["waterlopen"],
@@ -82,7 +106,7 @@ burn_layer = make_geocube(
     fill=0,
     rasterize_function=partial(rasterize_image, all_touched=False),
 )
-ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
+ahn_raster = ahn_raster - burn_layer["burn_depth"].astype("int32")
 
 # Brand b-waterlopen in raster
 burn_layer = make_geocube(
@@ -92,8 +116,9 @@ burn_layer = make_geocube(
     fill=0,
     rasterize_function=partial(rasterize_image, all_touched=False),
 )
-ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
+ahn_raster = ahn_raster - burn_layer["burn_depth"].astype("int32")
 
+logger.info("AHN opschonen en opslaan")
 ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
 ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
 fnames["hoogteraster"] = process_dir.joinpath("hoogtekaart_interp.tif")
@@ -101,7 +126,6 @@ ahn_raster_nan.rio.to_raster(fnames["hoogteraster"])
 
 # %%
 # Maak raster met 1 waarde voor hele gebied (bijv 1)
-import xarray as xr
 
 peilvak = xr.full_like(ahn_raster_nan, 1, dtype=int)
 fnames["peilvakken_raster"] = process_dir.joinpath("peilvakken.tif")
@@ -119,116 +143,3 @@ calculate_subcatchments(
     crs=28992,
     report_maps=False,
 )
-
-
-# %%%%%%%%%%%%%%% oude Code
-
-clusters = dfs["clusters"].index
-# limiteren clusters tot CLUSTERS
-if CLUSTERS:
-    clusters = [i for i in clusters if i in CLUSTERS]
-
-
-for cluster in clusters:
-    logger.info(f"starten met cluster {cluster}")
-
-    # select_clusters
-    cluster_select_df = dfs["clusters"].loc[[cluster]]
-
-    # aanmaken directory
-    cluster_dir = fnames["process_dir"].joinpath(f"{cluster}")
-    if cluster_dir.exists():
-        shutil.rmtree(cluster_dir)
-    cluster_dir.mkdir(parents=True)
-
-    # clip hoogteraster met clustergrens
-    logger.info("aanmaken hoogteraster")
-    with rxr.open_rasterio(fnames["ahn"], mask_and_scale=True, chunks=True) as ahn_raster_interp:
-        ahn_raster_interp = ahn_raster_interp.rio.write_crs("EPSG:28992", inplace=True)
-        ahn_clipped = ahn_raster_interp.rio.clip(
-            cluster_select_df.geometry,
-            cluster_select_df.crs,
-            all_touched=True,
-            drop=True,
-            invert=False,
-        )
-
-        # reken hoogtedata om naar integers
-        ahn_raster = ahn_clipped * 100
-        ahn_raster = ahn_raster.astype(int)
-
-    # clip waterlopen op basis van clustergrens
-    logger.info("aanmaken waterlopen-raster")
-    waterlopen_clipped_gdf = gpd.clip(dfs["waterlopen"], dfs["clusters"].at[cluster, "geometry"])
-
-    # creëer mask om ID van waterlopen in template raster te branden (verrasteren van waterlopen)
-    waterlopen = make_geocube(
-        waterlopen_clipped_gdf,
-        measurements=["GridId"],
-        like=ahn_raster,
-        fill=0,
-        rasterize_function=partial(rasterize_image, all_touched=False),
-    )
-
-    fnames["waterlopen_raster"] = cluster_dir.joinpath("waterlopen_verrasterd_GridId.tif")
-    waterlopen.rio.to_raster(fnames["waterlopen_raster"])
-
-    # branden van a-waterlopen in hoogtekaart
-    burn_layer = make_geocube(
-        waterlopen_clipped_gdf,
-        measurements=["burn_depth"],
-        like=ahn_raster,
-        fill=0,
-        rasterize_function=partial(rasterize_image, all_touched=False),
-    )
-
-    ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
-
-    # branden van b-waterlopen in hoogtekaart
-    b_waterlopen_clipped_gdf = gpd.clip(dfs["b_waterlopen"], dfs["clusters"].at[cluster, "geometry"])
-
-    burn_layer = make_geocube(
-        b_waterlopen_clipped_gdf,
-        measurements=["burn_depth"],
-        like=ahn_raster,
-        fill=0,
-        rasterize_function=partial(rasterize_image, all_touched=False),
-    )
-
-    ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
-    ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
-    ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
-    fnames["hoogteraster"] = cluster_dir.joinpath("hoogtekaart_interp.tif")
-    ahn_raster_nan.rio.to_raster(fnames["hoogteraster"])
-
-    # maak raster met peilvakken met waarde CLUSTER_ID en schrijf weg zodat clustergrenzen worden gebruikt als peilgebiedsgrens
-    logger.info("aanmaken peilvak-raster")
-    peilvak = make_geocube(
-        cluster_select_df,
-        measurements=["CLUSTER_ID"],
-        like=ahn_raster_nan,
-        fill=-9999.0,
-        rasterize_function=partial(rasterize_image, all_touched=False),
-    )
-
-    # gebruik de code van het cluster (CLUSTER_ID) om juiste mask te selecteren
-    peilvak = peilvak.where(peilvak != cluster, 1)
-
-    # schrijf peilvakken mask weg naar raster (.asc)
-    fnames["peilvakken_raster"] = cluster_dir.joinpath("peilvakken.tif")
-    peilvak.rio.to_raster(fnames["peilvakken_raster"])
-
-    # bereken
-    logger.info("bereken afwateringseenheden")
-    fnames["afwateringseenheden"] = cluster_dir.joinpath("afwateringseenheden.gpkg")
-    calculate_subcatchments(
-        elevation_raster=fnames["hoogteraster"],
-        water_segments_raster=fnames["waterlopen_raster"],
-        areas_raster=fnames["peilvakken_raster"],
-        subatchments_gpkg=fnames["afwateringseenheden"],
-        max_fill_depth=MAX_FILL_DEPTH,
-        crs=28992,
-        report_maps=False,
-    )
-
-# %%
