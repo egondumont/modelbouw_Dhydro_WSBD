@@ -93,6 +93,20 @@
       "src_col": "TYPECONTROLLER",
       "func": "",
       "default": "interval"
+    },
+    { "name": "pompid",
+      "type": "string",
+      "required": false,
+      "src_col": "POMPID",
+      "func": "",
+      "default": ""
+    },
+    { "name": "regelmiddelid",
+      "type": "string",
+      "required": false,
+      "src_col": "REGELMIDDELID",
+      "func": "",
+      "default": ""
     }
   ]
 }
