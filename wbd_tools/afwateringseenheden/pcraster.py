@@ -75,14 +75,14 @@ def calculate_subcatchments(
 
     # read rasters
     elevation = raster_to_pcr(elevation_raster)
-    water_segements = raster_to_pcr(water_segments_raster, dtype="int32")
+    water_segments = raster_to_pcr(water_segments_raster, dtype="int32")
     areas = raster_to_pcr(areas_raster, dtype=np.dtype("int32"))
 
     # Local Drainage Direction map from LDD
     ldd = pcr.lddcreate(elevation, max_fill_depth, 1e31, 1e31, 1e31)
 
     # subcatchments from outlets
-    catchments = pcr.subcatchment(ldd, water_segements)
+    catchments = pcr.subcatchment(ldd, water_segments)
 
     # vectorize sub-catchments
     with rasterio.open(elevation_raster, "r") as src:
