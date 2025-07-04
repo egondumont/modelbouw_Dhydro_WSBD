@@ -3,6 +3,7 @@ import shutil
 from functools import partial
 
 import geopandas as gpd
+import numpy as np
 import rioxarray as rxr
 from geocube.api.core import make_geocube
 from geocube.rasterize import rasterize_image
@@ -20,7 +21,8 @@ logger = get_logger()
 
 AHN_FILE = "dtm_2m.tif"
 MAX_FILL_DEPTH = 5000
-CLUSTERS: list[int] = []
+CLUSTERS: list[int] = [5]
+RASTER_TYPE = "map"  # we schrijven map-files, omdat pcr2numpy een exception geeft: ValueError: resize only works on single-segment arrays
 
 # %%
 
@@ -83,10 +85,8 @@ for cluster in clusters:
             drop=True,
             invert=False,
         )
-
         # reken hoogtedata om naar integers
-        ahn_raster = ahn_clipped * 100
-        ahn_raster = ahn_raster.astype(int)
+        ahn_raster = ahn_clipped.where(~ahn_clipped.isnull()) * 100
 
     # clip waterlopen op basis van clustergrens
     logger.info("aanmaken waterlopen-raster")
@@ -101,8 +101,8 @@ for cluster in clusters:
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
 
-    fnames["waterlopen_raster"] = cluster_dir.joinpath("waterlopen_verrasterd_GridId.tif")
-    waterlopen.rio.to_raster(fnames["waterlopen_raster"])
+    fnames["waterlopen_raster"] = cluster_dir.joinpath(f"waterlopen_verrasterd_GridId.{RASTER_TYPE}")
+    waterlopen.astype(np.int32).rio.to_raster(fnames["waterlopen_raster"], PCRASTER_VALUESCALE="VS_NOMINAL")
 
     # branden van a-waterlopen in hoogtekaart
     burn_layer = make_geocube(
@@ -113,7 +113,7 @@ for cluster in clusters:
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
 
-    ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
+    ahn_raster = ahn_raster - burn_layer["burn_depth"]
 
     # branden van b-waterlopen in hoogtekaart
     b_waterlopen_clipped_gdf = gpd.clip(dfs["b_waterlopen"], dfs["clusters"].at[cluster, "geometry"])
@@ -126,18 +126,17 @@ for cluster in clusters:
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
 
-    ahn_raster = ahn_raster - burn_layer["burn_depth"].astype(int)
-    ahn_raster_nan = ahn_raster.where(ahn_raster != -2147483648.0)
-    ahn_raster_nan.rio.write_nodata(-9999, encoded=True, inplace=True)
-    fnames["hoogteraster"] = cluster_dir.joinpath("hoogtekaart_interp.tif")
-    ahn_raster_nan.rio.to_raster(fnames["hoogteraster"])
+    ahn_raster = (ahn_raster - burn_layer["burn_depth"]).astype(np.float32)
+    ahn_raster.rio.write_nodata(-9999, encoded=True, inplace=True)
+    fnames["hoogteraster"] = cluster_dir.joinpath(f"hoogtekaart_interp.{RASTER_TYPE}")
+    ahn_raster.rio.to_raster(fnames["hoogteraster"], PCRASTER_VALUESCALE="VS_SCALAR")
 
     # maak raster met peilvakken met waarde CLUSTER_ID en schrijf weg zodat clustergrenzen worden gebruikt als peilgebiedsgrens
     logger.info("aanmaken peilvak-raster")
     peilvak = make_geocube(
         cluster_select_df,
         measurements=["CLUSTER_ID"],
-        like=ahn_raster_nan,
+        like=ahn_raster,
         fill=-9999.0,
         rasterize_function=partial(rasterize_image, all_touched=False),
     )
@@ -146,8 +145,8 @@ for cluster in clusters:
     peilvak = peilvak.where(peilvak != cluster, 1)
 
     # schrijf peilvakken mask weg naar raster (.asc)
-    fnames["peilvakken_raster"] = cluster_dir.joinpath("peilvakken.tif")
-    peilvak.rio.to_raster(fnames["peilvakken_raster"])
+    fnames["peilvakken_raster"] = cluster_dir.joinpath(f"peilvakken.{RASTER_TYPE}")
+    peilvak.astype(np.int32).rio.to_raster(fnames["peilvakken_raster"], PCRASTER_VALUESCALE="VS_NOMINAL")
 
     # bereken
     logger.info("bereken afwateringseenheden")
@@ -159,7 +158,7 @@ for cluster in clusters:
         subatchments_gpkg=fnames["afwateringseenheden"],
         max_fill_depth=MAX_FILL_DEPTH,
         crs=28992,
-        report_maps=False,
+        report_maps=True,
     )
 
 # %%
