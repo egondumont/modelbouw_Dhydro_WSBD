@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import warnings
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import contextily as cx
@@ -29,6 +30,7 @@ import pandas as pd
 from shapely.geometry import Point
 
 from wbd_tools.fnames import get_fnames, get_output_dir
+from wbd_tools.hypothetisch import afvoergolf
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -644,6 +646,7 @@ hydamo.storagenodes.add_storagenode(
 
 hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=fm.geometry.netfile.network)
 
+series = afvoergolf(piekafvoer=50, start=datetime(2016, 6, 1), duur=timedelta(hours=1), nalooptijd=timedelta(hours=1))
 
 # However, we also need an upstream discharge boundary, which is not constant. We add a fictional time series, which can be read from Excel as well:
 
