@@ -642,20 +642,29 @@ hydamo.storagenodes.add_storagenode(
 # The HyDAMO database contains constant boundaries. They are added to the model:
 
 # In[ ]:
-
+# set zetten bij de Belgische Grens van Aa of Weerijs een afvoergolf met 50m3/s op het model
 
 hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=fm.geometry.netfile.network)
+series = afvoergolf(piekafvoer=50, start=datetime(2016, 6, 1), duur=timedelta(days=1), nalooptijd=timedelta(days=1))
 
-series = afvoergolf(piekafvoer=50, start=datetime(2016, 6, 1), duur=timedelta(hours=1), nalooptijd=timedelta(hours=1))
+hydamo.external_forcings.boundary_nodes["AAOW"]["time"] = (
+    (series.index - series.index[0]).total_seconds() / 60.0
+).tolist()
+hydamo.external_forcings.boundary_nodes["AAOW"]["value"] = series.to_list()
+
+hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
+    f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
+)
+
 
 # However, we also need an upstream discharge boundary, which is not constant. We add a fictional time series, which can be read from Excel as well:
 
 # In[ ]:
 
 
-# series = pd.Series(np.sin(np.linspace(2, 8, 120) * -1) + 1.0)
-# series.index = [pd.Timestamp("2016-06-01 00:00:00") + pd.Timedelta(hours=i) for i in range(120)]
-# series.plot()
+series = pd.Series(np.sin(np.linspace(2, 8, 120) * -1) + 1.0)
+series.index = [pd.Timestamp("2016-06-01 00:00:00") + pd.Timedelta(hours=i) for i in range(120)]
+series.plot()
 
 
 # There is also a fuction to convert laterals, but to run this we also need the RR model. Therefore, see below. It also possible to manually add boundaries and laterals as constants or timeseries. We implement the sinoid above as an upstream streamflow boundary and a lateral:
@@ -663,9 +672,9 @@ series = afvoergolf(piekafvoer=50, start=datetime(2016, 6, 1), duur=timedelta(ho
 # In[ ]:
 
 
-# hydamo.external_forcings.add_boundary_condition(
-#     "RVW_01", (197464.0, 392130.0), "dischargebnd", series, fm.geometry.netfile.network
-# )
+hydamo.external_forcings.add_boundary_condition(
+    "RVW_01", (197464.0, 392130.0), "dischargebnd", series, fm.geometry.netfile.network
+)
 
 
 # In[ ]:
