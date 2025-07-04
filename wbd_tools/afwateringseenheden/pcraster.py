@@ -92,7 +92,7 @@ def calculate_subcatchments(
         catchments_map = elevation_raster.with_name("catchments.map")
         pcr.report(catchments, catchments_map.as_posix())
         with rasterio.open(catchments_map) as src:
-            data = src.read(1).astype(int)
+            data = src.read(1).astype("int32")
     else:
         data = pcr.pcr2numpy(catchments, nodata).astype("int32")
     gdf = vectorize_data(data=data, nodata=nodata, transform=transform, crs=crs)
