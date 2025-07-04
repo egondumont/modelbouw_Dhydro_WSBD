@@ -160,5 +160,6 @@ for cluster in clusters:
         crs=28992,
         report_maps=True,
     )
+    logger.info(f"klaar met cluster {cluster}")
 
 # %%
