@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import geopandas as gpd
+import pandas as pd
+from shapely import Point
 
 
 class ProcessManagement:
@@ -14,7 +16,11 @@ class ProcessManagement:
         management = gpd.read_file(self.source_data_dir / "sturing.gpkg")
         pumpstation = gpd.read_file(self.output_dir / "gemaal.gpkg")
         network = gpd.read_file(self.output_dir / "hydroobject.gpkg")
-        observations = gpd.GeoDataFrame(columns=["geometry", "id", "locationtype"], geometry="geometry")
+        observations = gpd.GeoDataFrame(
+            {"id": [], "locationtype": []},
+            geometry=[],
+            crs="EPSG:28992",
+        )
 
         network_buffer = network.buffer(self.checkbuffer[0], cap_style=2)
         pumpindex_hydrobjectindex = {}
@@ -32,16 +38,17 @@ class ProcessManagement:
                     closest_branch = network.iloc[pumpindex_hydrobjectindex[index_pumpstation]]
                     # find location on closest branch that is 3 meters upstream of the pumpstation
                     distance = closest_branch.geometry.project(row_pumpstation.geometry) - 3.0
-                    observation_location = closest_branch.interpolate(distance).geometry.iloc[0]
-                    observations.loc[len(observations)] = {
-                        "geometry": observation_location,
-                        "id": row_pumpstation.code,
-                        "locationtype": "1d",
-                    }
+                    observation_location = Point(closest_branch.interpolate(distance).geometry.iloc[0])
+                    row_observations = gpd.GeoDataFrame(
+                        {"id": [row_pumpstation.code], "locationtype": ["1d"]},
+                        geometry=[observation_location],
+                        crs="EPSG:28992",
+                    )
+                    observations = pd.concat([observations, row_observations], ignore_index=True)
                     management.loc[index_management, "geometry"] = observation_location
 
         # add observation ID to management object
         management["meetlocatieid"] = management["pompid"]
 
-        observations.to_file(self.output_dir / "meetpunten.gpkg", driver="GPKG", crs="EPSG:28992")
+        observations.to_file(self.output_dir / "meetpunten.gpkg", driver="GPKG")
         management.to_file(self.output_dir / "sturing.gpkg", driver="GPKG")
