@@ -141,6 +141,10 @@ fn_regelmiddel = output_dir / "regelmiddel.gpkg"
 fn_kunstwerkopening = output_dir / "kunstwerkopening.gpkg"
 fn_afwateringseenheden = fnames["afwateringseenheden"]
 fn_modelgebieden = fnames["modelgebieden_gpkg"]
+fn_sturing = output_dir / "sturing.gpkg"
+fn_pumps = output_dir / "pomp.gpkg"
+fn_pumpstations = output_dir / "gemaal.gpkg"
+fn_observations = output_dir / "meetpunten.gpkg"
 
 # initialize the class
 hydamo = HyDAMO()
@@ -432,6 +436,14 @@ hydamo.structures.rweirs_df.head()
 
 # In[ ]:
 
+
+obs_dict = gpd.GeoDataFrame.from_file(fn_observations).to_dict("list")
+hydamo.observationpoints.add_points(
+    obs_dict["geometry"],
+    obs_dict["id"],
+    locationTypes=obs_dict["locationtype"],
+    snap_distance=0.5,
+)
 
 # hydamo.observationpoints.add_points(
 #     [Point(199617,394885), Point(199421,393769), Point(199398,393770)],
