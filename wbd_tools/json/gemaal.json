@@ -4,8 +4,8 @@
         "type": "",
         "path": "d:\\repositories\\modelbouw_Dhydro_WSBD\\input\\acceptatiedatabase.gdb",
         "layer": "gemaal",
-        "filter": "",
-        "filter_type": "include",
+        "filter": {"FUNCTIEGEMAAL": [3]},
+        "filter_type": "exclude",
         "query": ""
     },
     "geometry": {

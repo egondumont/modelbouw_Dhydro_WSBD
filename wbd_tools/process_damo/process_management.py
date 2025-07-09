@@ -39,11 +39,11 @@ class ProcessManagement:
                     closest_branch = network.iloc[pumpindex_hydrobjectindex[index_pumpstation]]
                     # find location of pumpstation on closest branch
                     distance = closest_branch.geometry.project(row_pumpstation.geometry)
-                    # find location of observation on branch on specified distance usptream of pumpstation
+                    # find location of specified distance upstream of pumpstation along hydroobject (this is where the observation will be placed)
                     distance = (distance - distance_pump_observation).iloc[0]
                     # if the beginning of the branch is within 3 meters:
-                    # assign a location on the preceding branch, or
-                    # if there is no preceding branch, assign the beginning of the current branch
+                    # assign an observation location on the preceding branch, or
+                    # if there is no preceding branch, place the obserbation onthe beginning of the current branch
                     if distance < 0.0:
                         # find preceding branch
                         closest_branch_ = self.point_near_linestring_end(
@@ -76,7 +76,7 @@ class ProcessManagement:
 
     def point_near_linestring_end(self, point, linestrings, distance_tolerance):
         """
-        Checks if a Shapely Point is within a specified distance of a LineString's endpoint.
+        Checks if a Shapely Point is within a specified distance of the endpoints of a list of linestrings.
 
         Args:
             point: A shapely.geometry.Point object.
