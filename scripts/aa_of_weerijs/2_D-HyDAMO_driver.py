@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 
 from wbd_tools.fnames import get_fnames, get_output_dir
 
@@ -53,15 +53,13 @@ from hydrolib.dhydamo.core.drtc import DRTCModel
 
 # In[4]:
 from hydrolib.dhydamo.core.hydamo import HyDAMO
-from hydrolib.dhydamo.geometry import mesh, spatial
+from hydrolib.dhydamo.geometry import mesh
 from hydrolib.dhydamo.geometry.gridgeom.links1d2d import Links1d2d
 from hydrolib.dhydamo.geometry.mesh2d_gridgeom import Rectangular
 from hydrolib.dhydamo.geometry.viz import plot_network
 from hydrolib.dhydamo.io.common import ExtendedDataFrame
 from hydrolib.dhydamo.io.dimrwriter import DIMRWriter
 from hydrolib.dhydamo.io.drrwriter import DRRWriter
-
-from wbd_tools.case_conversions import sentence_to_snake_case
 
 # Define in- and output paths
 
@@ -75,7 +73,7 @@ from wbd_tools.case_conversions import sentence_to_snake_case
 
 TwoD = False
 RR = False
-RTC = False
+RTC = True
 
 
 # Two concepts are available for 2D mesh generation. Use 'GG' for gridgeom (works only in windows, identical to delft3dfmpy), or 'MK' for Meshkernel. Meshkernel is eventually the preferred option (platform-independent, more triangulation options) but has limited support for complex geometries as of now.
@@ -93,7 +91,7 @@ TwoD_option = "MK"  # or 'GG'
 # In[ ]:
 
 
-# rtc_onlytimeseries = False
+rtc_onlytimeseries = False
 # rtc_timeseriesdata = data_path / 'rtc_timeseries.csv'
 data_path = Path()
 
@@ -206,11 +204,12 @@ hydamo.snap_to_branch_and_drop(hydamo.culverts, hydamo.branches, snap_method="en
 hydamo.closing_device.read_gpkg_layer(
     fn_afsluitmiddel, layer_name="afsluitmiddel", index_col="code"
 )  # toevoegen afsluiters
-
-# hydamo.pumpstations.read_gpkg_layer(fn_pumpstations, layer_name="Gemaal", index_col="code")
-# hydamo.pumps.read_gpkg_layer(fn_pumps, layer_name="Pomp", index_col="code")
-# hydamo.management.read_gpkg_layer(fn_sturing, layer_name="Sturing", index_col="code")
-# hydamo.snap_to_branch_and_drop(hydamo.pumpstations, hydamo.branches, snap_method="overal", maxdist=10, drop_related=True)
+hydamo.pumpstations.read_gpkg_layer(fn_pumpstations, layer_name="Gemaal", index_col="code")
+hydamo.pumps.read_gpkg_layer(fn_pumps, layer_name="Pomp", index_col="code")
+hydamo.management.read_gpkg_layer(fn_sturing, layer_name="Sturing", index_col="code")
+hydamo.snap_to_branch_and_drop(
+    hydamo.pumpstations, hydamo.branches, snap_method="overal", maxdist=10, drop_related=True
+)
 
 # hydamo.bridges.read_gpkg_layer(fn_bridges, layer_name="Brug", index_col="code")
 # hydamo.snap_to_branch_and_drop(hydamo.bridges, hydamo.branches, snap_method="overal", maxdist=1100, drop_related=True)
@@ -220,7 +219,7 @@ hydamo.closing_device.read_gpkg_layer(
 
 # In[ ]:
 
-
+"""
 # read boundaries
 boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
 boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
@@ -262,7 +261,7 @@ afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwatering
 afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
 hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
 lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
-
+"""
 
 # In[ ]:
 
@@ -356,8 +355,8 @@ hydamo.structures.convert.culverts(hydamo.culverts, management_device=hydamo.clo
 #     profiles=hydamo.profile,
 # )
 
-# hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, management=hydamo.management)
-
+hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, management=hydamo.management)
+"""
 
 # Additional methods are available to add structures:
 
@@ -425,7 +424,7 @@ hydamo.structures.rweirs_df.head()
 # cmpnd_list = [["D_24521", "D_14808"],["D_21450", "D_19758"],["D_19757", "D_21451"]]
 # hydamo.structures.convert.compound_structures(cmpnd_ids, cmpnd_list)
 
-
+"""
 # ### Observation points
 
 # Observation points are now written in the new format, where one can discriminate between 1D ('1d') and 2D ('2d') observation points. This can be done using the optional argument 'locationTypes'. If it is omitted, all points are assumed to be 1d. 1D-points are always snapped to a the nearest branch. 2D-observation points are always defined by their X/Y-coordinates.
@@ -462,10 +461,10 @@ hydamo.observationpoints.add_points(
 
 structures = hydamo.structures.as_dataframe(
     rweirs=True,
-    bridges=True,
-    uweirs=True,
+    bridges=False,
+    uweirs=False,
     culverts=True,
-    orifices=True,
+    orifices=False,
     pumps=True,
 )
 
@@ -632,7 +631,7 @@ hydamo.crosssections.set_default_locations(missing)
 
 # In[ ]:
 
-
+"""
 hydamo.storagenodes.add_storagenode(
     id="sto_test",
     xy=(141001, 395030),
@@ -643,7 +642,7 @@ hydamo.storagenodes.add_storagenode(
     interpolate="linear",
     network=fm.geometry.netfile.network,
 )
-
+"""
 
 # Note that if 'usetable=True' an area-waterlevel relation is provided. The alternative, meant for an urban setting, implies constant storage between bedlevel and streetlevel and upwards. For most applications of D-HyDAMO, the first application is most relevant, like the example below.
 
@@ -921,8 +920,7 @@ if RTC:
             fm,
             output_path=output_path,
             rtc_timestep=60.0,
-            complex_controllers_folder=data_path
-            / "complex_controllers",  # location where user defined XLM-code should be located
+            #           complex_controllers_folder = data_path # location where user defined XML-code should be located
         )
 
 
@@ -960,12 +958,17 @@ if RTC and not rtc_onlytimeseries:
 # In[ ]:
 
 
-if RTC and not rtc_onlytimeseries:
+if RTC and rtc_onlytimeseries:
     if not hydamo.management.typecontroller.empty:
         timeseries = pd.read_csv(data_path / "timecontrollers.csv")
         timeseries.index = timeseries.Time
 
-        drtcmodel.from_hydamo(pid_settings=pid_settings, interval_settings=interval_settings, timeseries=timeseries)
+if RTC:
+    drtcmodel.from_hydamo(
+        pid_settings=pid_settings,
+        interval_settings=interval_settings,
+        #       timeseries=timeseries
+    )
 
 
 # Additional controllers, that are not included in D-HyDAMO DAMO2.2 might be specified like this:
@@ -973,7 +976,7 @@ if RTC and not rtc_onlytimeseries:
 # In[ ]:
 
 
-if RTC and not rtc_onlytimeseries:
+if RTC and rtc_onlytimeseries:
     drtcmodel.add_time_controller(
         structure_id="S_96548", steering_variable="Crest level (s)", data=timeseries.loc[:, "S_96548"]
     )
@@ -1402,7 +1405,7 @@ if RR:
 
 # In[ ]:
 
-
+"""
 if RR:
     hydamo.external_forcings.convert.laterals(
         hydamo.laterals,
@@ -1486,7 +1489,7 @@ if RR:
     cx.add_basemap(ax, crs=28992, source=cx.providers.OpenStreetMap.Mapnik)
     fig.tight_layout()
 
-
+"""
 # ## Writing the model
 
 # Now we call Hydrolib-core functionality to write the model. First, we initialize an object that converts all dataframes to Hydrolib-core objects. Then we add these models to the file structure of the FM model.

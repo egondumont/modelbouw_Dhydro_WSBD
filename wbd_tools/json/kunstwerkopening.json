@@ -39,8 +39,8 @@
             "name": "globalid",
             "type": "String",
             "required": true,
-            "src_col": "",
-            "func": "globalid",
+            "src_col": "CODE",
+            "func": "",
             "default": "99"
         },
         {
