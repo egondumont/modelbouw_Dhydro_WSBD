@@ -8,7 +8,7 @@ import math
 from random import randint
 import numpy as np
 import pandas as pd
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Point
 
 from wbd_tools.dwarsprofiel_xyz import _make_profile
 from wbd_tools.tohydamogml.config import *
@@ -360,6 +360,22 @@ def nen3610id(damo_gdf=None, obj=None, waterschap="NL.WBHCODE.25"):
     df = pd.Series(data=data, index=damo_gdf.index)
     df = "{}.{}.".format(s1, object) + df.astype(str)
     return df
+
+
+def dummy_points_outside__beheergebied(damo_gdf, obj):
+    """Make point geometry just outside of beheergebied, so they can be written to a geopackage and be viewed in ArcGIS
+
+    Args:
+        damo_gdf (Pandas dataframe): the beheerregister layer/table converted to a dataframe
+        obj (dictionary): description of how to convert the beheerregister layer/table to DAMO2.2
+
+    Returns:
+        geoseries: Point geometry just outside of beheergebied
+    """
+    if not hasattr(damo_gdf, "geometry"):
+        return [Point(133996, 396397 + x * 10) for x in range(damo_gdf.shape[0])]
+    else:
+        return damo_gdf.geometry
 
 
 def globalid(damo_gdf=None, obj=None):

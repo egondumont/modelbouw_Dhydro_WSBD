@@ -11,7 +11,14 @@ class ProcessManagement:
         self.source_data_dir = self.output_dir / "brondata"
         self.checkbuffer = checkbuffer
 
-    def run(self):
+    def run(self, mask):
+        """
+        Parameters
+        ----------
+        mask : shapely polygon
+            Only the management items that intersect the mask will be included
+        """
+
         # Weir corrections specificially developed for Waterschap Brabantse Delta
         management = gpd.read_file(self.source_data_dir / "sturing.gpkg")
         gate = gpd.read_file(self.output_dir / "regelmiddel.gpkg")
@@ -21,6 +28,7 @@ class ProcessManagement:
             geometry=[],
             crs="EPSG:28992",
         )
+
         # Assumed distance (meters) between gate en the observation station used for steering the gate
         distance_gate_observation = 3.0
 
@@ -28,7 +36,7 @@ class ProcessManagement:
         gateindex_hydrobjectindex = {}
 
         for index_gate, row_gate in gate.iterrows():
-            for index_network, row_network in network.iterrows():
+            for index_network, _ in network.iterrows():
                 if network_buffer[index_network].intersects(row_gate.geometry):
                     gateindex_hydrobjectindex[index_gate] = [index_network]
 
@@ -68,6 +76,10 @@ class ProcessManagement:
                     )
                     observations = pd.concat([observations, row_observations], ignore_index=True)
                     management.loc[index_management, "geometry"] = observation_location
+
+        # Remove management rules that apply weirs and pumps outside the mask
+        # This step was not done in tohydamogml, because the 'management' table (DAMO) in the beheerregister has no geometry
+        management = management[management.intersects(mask)]
 
         # add observation ID to management object
         management["meetlocatieid"] = management["regelmiddelid"]

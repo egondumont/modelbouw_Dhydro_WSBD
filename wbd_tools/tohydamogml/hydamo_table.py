@@ -19,7 +19,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from shapely import ops
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Polygon
 
 from wbd_tools import attribute_functions
 from wbd_tools.tohydamogml.gml import Gml
@@ -139,7 +139,10 @@ class HydamoObject:
         if self.obj["geometry"]["func"]:
             func = getattr(attribute_functions, self.obj["geometry"]["func"])
             if self.obj["geometry"]["one2one"]:
-                self.gdf["geometry"] = pd.DataFrame(data={"geometry": func(damo_gdf=gdf_src, obj=self.obj)})
+                if isinstance(self.gdf, gpd.GeoDataFrame):
+                    gpd.set_geometry(func(damo_gdf=gdf_src, obj=self.obj), inplace=True)
+                else:
+                    self.gdf = gpd.GeoDataFrame(self.gdf, geometry=func(damo_gdf=gdf_src, obj=self.obj))
             else:
                 self.gdf = func(damo_gdf=gdf_src, obj=self.obj)
 
@@ -271,11 +274,6 @@ class HydamoObject:
         Write GPKG file to .gpkg file
 
         """
-
-        # Add dummy geometry to objects without geometry, so they can written to a geopackage
-        if not hasattr(self.gdf, "geometry"):
-            breda_coordinates = [Point(113164, 397131 + x * 10) for x in range(self.gdf.shape[0])]
-            self.gdf = gpd.GeoDataFrame(self.gdf, geometry=breda_coordinates, crs="EPSG:28992")
 
         return self.gdf.to_file(os.path.join(export_folder, f"{self.objectname}.gpkg"), driver="GPKG")
 

@@ -982,60 +982,6 @@ if RTC and rtc_onlytimeseries:
     )
 
 
-# In[ ]:
-
-
-if RTC and not rtc_onlytimeseries:
-    # construct a times series to use as a PID controller setpoint
-    series = pd.Series(np.sin(np.linspace(2, 8, 120) * -1) + 13.0)
-    series.index = [pd.Timestamp("2016-06-01 00:00:00") + pd.Timedelta(hours=i) for i in range(120)]
-    drtcmodel.add_pid_controller(
-        structure_id="S_96544",
-        observation_location="ObsS_96544",
-        steering_variable="Crest level (s)",
-        target_variable="Water level (op)",
-        setpoint=series,
-        ki=0.001,
-        kp=0.0,
-        kd=0,
-        max_speed=0.00033,
-        upper_bound=13.4,
-        lower_bound=12.8,
-        interpolation_option="LINEAR",
-        extrapolation_option="BLOCK",
-    )
-
-    # define an interval controller with a constant setpoint for an orifice gate
-    drtcmodel.add_interval_controller(
-        structure_id="orifice_test",
-        observation_location="ObsO_test",
-        steering_variable="Gate lower edge level (s)",
-        target_variable="Discharge (op)",
-        setpoint=13.2,
-        setting_below=12.8,
-        setting_above=13.4,
-        max_speed=0.00033,
-        deadband=0.1,
-        interpolation_option="LINEAR",
-        extrapolation_option="BLOCK",
-    )
-
-    # and add a PID controller to a pump capacity
-    drtcmodel.add_pid_controller(
-        structure_id="113GIS",
-        observation_location="ObsP_113GIS",
-        steering_variable="Capacity (p)",
-        target_variable="Water level (op)",
-        setpoint=0.3,
-        ki=0.001,
-        kp=0.0,
-        kd=0,
-        max_speed=0.00033,
-        upper_bound=0.4,
-        lower_bound=0.2,
-    )
-
-
 # ## Rainfall runoff model
 
 # First initialize an RR model:

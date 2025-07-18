@@ -9,7 +9,8 @@
   },
   "geometry": {
       "drop": false,
-      "func": ""
+      "one2one": true,
+      "func": "dummy_points_outside__beheergebied"
   },
   "related_data": {
     "path": "",

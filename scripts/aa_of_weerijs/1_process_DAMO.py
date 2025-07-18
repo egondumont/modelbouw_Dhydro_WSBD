@@ -115,7 +115,7 @@ if activities["closing"]:
 if activities["management"]:
     logging.info("Start processing management")
     process_management = ProcessManagement(output_dir, checkbuffer)
-    process_management.run()
+    process_management.run(mask=modelgebied)
     logging.info("finished processing management")
 
 logging.info("Finished")
