@@ -358,61 +358,6 @@ hydamo.structures.convert.culverts(hydamo.culverts, management_device=hydamo.clo
 hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, management=hydamo.management)
 """
 
-# Additional methods are available to add structures:
-
-# In[ ]:
-
-
-# hydamo.structures.add_rweir(
-#     id="rwtest",
-#     name="rwtest",
-#     branchid="W_1386_0",
-#     chainage=2.0,
-#     crestlevel=12.5,
-#     crestwidth=3.0,
-#     corrcoeff=1.0,
-# )
-# hydamo.structures.add_orifice(
-#     id="orifice_test",
-#     branchid="W_242213_0",
-#     chainage=43.0,
-#     crestlevel=18.00,
-#     gateloweredgelevel=18.5,
-#     crestwidth=7.5,
-#     corrcoeff=1.0,
-# )
-# hydamo.structures.add_uweir(
-#     id="uweir_test",
-#     branchid="W_242213_0",
-#     chainage=2.0,
-#     crestlevel=18.00,
-#     crestwidth=7.5,
-#     dischargecoeff=1.0,
-#     numlevels=4,
-#     yvalues="0.0 1.0 2.0 3.0",
-#     zvalues="19.0 18.0 18.2 19",
-# )
-# hydamo.structures.add_culvert(
-#     id="culvert_test",
-#     branchid="W_242213_0",
-#     chainage=42.0,
-#     rightlevel=17.2,
-#     leftlevel=17.1,
-#     length=5.,
-#     bedfrictiontype='StricklerKs',
-#     bedfriction=75,
-#     inletlosscoeff=0.6,
-#     outletlosscoeff = 1.0,
-#     crosssection = {'shape':'circle', 'diameter':0.6}
-# )
-
-
-# The resulting dataframes look like this:
-
-# In[ ]:
-
-
-hydamo.structures.rweirs_df.head()
 
 
 # Indicate structures that are at the same location and should be treated as a compound structure. The D-Hydro GUI does this automatically, but for DIMR-calculations this should be done here.
