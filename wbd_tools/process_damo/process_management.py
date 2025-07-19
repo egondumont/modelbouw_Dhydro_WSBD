@@ -36,8 +36,12 @@ class ProcessManagement:
         network_buffer = network.buffer(self.checkbuffer[0], cap_style=2)
 
         # linking weir gates to hydroobjects
-        self.make_locations_of_measurements_and_management(gate, network, network_buffer)
-
+        self.make_locations_of_measurements_and_management(
+            gate,
+            network,
+            network_buffer,
+            is_gate=True,  # Automatic gates require separate observation locations in D-hydro, in contrast to pumps in D-hydro
+        )
         # linking pumps to hydroobjects
         self.make_locations_of_measurements_and_management(pump, network, network_buffer)
 
@@ -51,21 +55,27 @@ class ProcessManagement:
         self.observations.to_file(self.output_dir / "meetpunten.gpkg", driver="GPKG")
         self.management.to_file(self.output_dir / "sturing.gpkg", driver="GPKG")
 
-    def make_locations_of_measurements_and_management(self, structure, network, network_buffer):
+    def make_locations_of_measurements_and_management(self, structure, network, network_buffer, is_gate: bool = False):
         structureindex_hydrobjectindex = {}
         for index_structure, row_structure in structure.iterrows():
             for index_network, _ in network.iterrows():
                 if network_buffer[index_network].intersects(row_structure.geometry):
                     structureindex_hydrobjectindex[index_structure] = [index_network]
+
+        if is_gate:
+            id_name = "regelmiddelid"
+        else:
+            id_name = "pompid"
+
         for index_structure, row_structure in structure.iterrows():
             for index_management, row_management in self.management.iterrows():
                 # voor iedere regelmiddelid in object Sturing...
-                if row_structure["code"] == row_management["regelmiddelid"]:
+                if row_structure["code"] == row_management[id_name]:
                     # selecteren hydroobject waarop het stuw horend bij het regelmiddel ligt
                     closest_branch = network.iloc[structureindex_hydrobjectindex[index_structure]]
-                    # find location of gate on closest branch
+                    # find location of gate/pump on closest branch
                     distance = closest_branch.geometry.project(row_structure.geometry)
-                    # find location of specified distance upstream of gate along hydroobject (this is where the observation will be placed)
+                    # find location of specified distance upstream of gate/pump along hydroobject (this is where the observation will be placed)
                     distance = (distance - self.distance_structure_observation).iloc[0]
                     # if the beginning of the branch is within 3 meters:
                     # assign an observation location on the preceding branch, or
@@ -91,8 +101,9 @@ class ProcessManagement:
                         geometry=[observation_location],
                         crs="EPSG:28992",
                     )
-                    self.observations = pd.concat([self.observations, row_observations], ignore_index=True)
                     self.management.loc[index_management, "geometry"] = observation_location
+                    if is_gate:
+                        self.observations = pd.concat([self.observations, row_observations], ignore_index=True)
 
     def point_near_linestring_end(self, point, linestrings, distance_tolerance):
         """
