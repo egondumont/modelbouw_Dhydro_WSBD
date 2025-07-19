@@ -365,12 +365,16 @@ def nen3610id(damo_gdf=None, obj=None, waterschap="NL.WBHCODE.25"):
 def dummy_points_outside__beheergebied(damo_gdf, obj):
     """Make point geometry just outside of beheergebied, so they can be written to a geopackage and be viewed in ArcGIS
 
-    Args:
-        damo_gdf (Pandas dataframe): the beheerregister layer/table converted to a dataframe
-        obj (dictionary): description of how to convert the beheerregister layer/table to DAMO2.2
+    Parameters:
+    ----------
+        damo_gdf: Pandas dataframe
+            the beheerregister layer/table converted to a dataframe
+        obj: dictionary
+            description of how to convert the beheerregister layer/table to DAMO2.2
 
     Returns:
-        geoseries: Point geometry just outside of beheergebied
+        geoseries
+            Point geometry just outside of beheergebied
     """
     if not hasattr(damo_gdf, "geometry"):
         return [Point(133996, 396397 + x * 10) for x in range(damo_gdf.shape[0])]
@@ -379,7 +383,7 @@ def dummy_points_outside__beheergebied(damo_gdf, obj):
 
 
 def globalid(damo_gdf=None, obj=None):
-    """ "
+    """
     Maakt globalid volgens DAMO-formatspecificatie.
     Geeft een rij een string die op de hele wereld uniek is
     """

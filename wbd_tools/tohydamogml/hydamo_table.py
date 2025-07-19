@@ -139,11 +139,15 @@ class HydamoObject:
         if self.obj["geometry"]["func"]:
             func = getattr(attribute_functions, self.obj["geometry"]["func"])
             if self.obj["geometry"]["one2one"]:
-                if isinstance(self.gdf, gpd.GeoDataFrame):
-                    gpd.set_geometry(func(damo_gdf=gdf_src, obj=self.obj), inplace=True)
-                else:
-                    self.gdf = gpd.GeoDataFrame(self.gdf, geometry=func(damo_gdf=gdf_src, obj=self.obj))
-            else:
+                if isinstance(
+                    self.gdf, gpd.GeoDataFrame
+                ):  # if DAMO-object has geometry in beheerregister, that needs to be adjusted...
+                    gpd.set_geometry(func(damo_gdf=self.gdf_src, obj=self.obj), inplace=True)
+                else:  # if DAMO-object has no geometry (in beheerregister)...
+                    self.gdf = gpd.GeoDataFrame(
+                        self.gdf, geometry=func(damo_gdf=self.gdf, obj=self.obj), crs="EPSG:28992"
+                    )
+            else:  # if each feature of a layer in the beheerregister corresponds to multiple DAMO-features...
                 self.gdf = func(damo_gdf=gdf_src, obj=self.obj)
 
         # Add attributes
