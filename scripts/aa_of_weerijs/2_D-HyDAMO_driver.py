@@ -76,7 +76,7 @@ from wbd_tools.case_conversions import sentence_to_snake_case
 # In[6]:
 
 
-TwoD = True
+TwoD = False
 RR = False
 RTC = False
 
@@ -258,8 +258,8 @@ laterals_df["globalid"] = laterals_df["code"]
 afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
 
 afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
-hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
-lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
+# hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
+# lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
 
 
 # In[ ]:
@@ -435,12 +435,12 @@ hydamo.structures.rweirs_df.head()
 # In[ ]:
 
 
-# hydamo.observationpoints.add_points(
-#     [Point(199617,394885), Point(199421,393769), Point(199398,393770)],
-#     ["Obs_BV152054", "ObsS_96684","ObsO_test"],
-#     locationTypes=["1d", "1d", "1d"],
-#     snap_distance=10.0,
-# )
+hydamo.observationpoints.add_points(
+    [Point(103871.554, 382260.925), Point(104424, 386069), Point(105825, 388296)],
+    ["AOW1", "AOW2", "AOW3"],
+    locationTypes=["1d", "1d", "1d"],
+    snap_distance=10.0,
+)
 
 
 # ### The 1D mesh
@@ -1416,7 +1416,7 @@ if RR:
 else:
     hydamo.external_forcings.convert.laterals(
         locations=hydamo.laterals,
-        lateral_discharges=lateral_discharges,
+        # lateral_discharges=lateral_discharges,
         rr_boundaries=None,
     )
 
@@ -1574,7 +1574,7 @@ fm.output.mapinterval = [
     fm.time.tstop,
 ]  # Map file output, given as 'interval' 'start period' 'end period' [s].
 fm.output.rstinterval = [
-    86400.0,
+    3600,
     fm.time.tstart,
     fm.time.tstop,
 ]  # Restart file output, given as 'interval' 'start period' 'end period' [s].
@@ -1585,6 +1585,7 @@ fm.output.hisinterval = [
 ]  # History output, given as 'interval' 'start period' 'end period' [s].
 fm.output.wrimap_flow_analysis = 1  # write information for flow analysis
 
+fm.output.wrihis_discharge = True
 
 # The default sediment model settings raise an error in DIMR. Delete them.
 
