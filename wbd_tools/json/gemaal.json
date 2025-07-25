@@ -4,8 +4,8 @@
         "type": "",
         "path": "d:\\repositories\\modelbouw_Dhydro_WSBD\\input\\acceptatiedatabase.gdb",
         "layer": "gemaal",
-        "filter": "",
-        "filter_type": "include",
+        "filter": {"FUNCTIEGEMAAL": [3]},
+        "filter_type": "exclude",
         "query": ""
     },
     "geometry": {
@@ -20,8 +20,7 @@
     },
     "index": {
         "name": "code",
-        "src_col": "CODE",
-        "func": "gemaal_rename_index"
+        "src_col": "CODE"
     },
     "attributes": [
         {
@@ -32,12 +31,12 @@
             "func": "nen3610id",
             "default": "99"
         },
-        {
+                {
             "name": "globalid",
             "type": "String",
             "required": false,
-            "src_col": "GLOBALID",
-            "func": "",
+            "src_col": "CODE",
+            "func": "gemaal_rename_index",
             "default": ""
         },
         {

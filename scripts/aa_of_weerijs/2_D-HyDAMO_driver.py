@@ -18,7 +18,6 @@ import os
 import shutil
 import sys
 import warnings
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import contextily as cx
@@ -27,10 +26,9 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-from shapely.geometry import Point
+from shapely.geometry import Polygon
 
 from wbd_tools.fnames import get_fnames, get_output_dir
-from wbd_tools.hypothetisch import afvoergolf
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -55,16 +53,13 @@ from hydrolib.dhydamo.core.drtc import DRTCModel
 
 # In[4]:
 from hydrolib.dhydamo.core.hydamo import HyDAMO
-from hydrolib.dhydamo.geometry import mesh, spatial
+from hydrolib.dhydamo.geometry import mesh
 from hydrolib.dhydamo.geometry.gridgeom.links1d2d import Links1d2d
 from hydrolib.dhydamo.geometry.mesh2d_gridgeom import Rectangular
 from hydrolib.dhydamo.geometry.viz import plot_network
 from hydrolib.dhydamo.io.common import ExtendedDataFrame
 from hydrolib.dhydamo.io.dimrwriter import DIMRWriter
 from hydrolib.dhydamo.io.drrwriter import DRRWriter
-
-from wbd_tools import get_modelgebied
-from wbd_tools.case_conversions import sentence_to_snake_case
 
 # Define in- and output paths
 
@@ -78,7 +73,7 @@ from wbd_tools.case_conversions import sentence_to_snake_case
 
 TwoD = False
 RR = False
-RTC = False
+RTC = True
 
 
 # Two concepts are available for 2D mesh generation. Use 'GG' for gridgeom (works only in windows, identical to delft3dfmpy), or 'MK' for Meshkernel. Meshkernel is eventually the preferred option (platform-independent, more triangulation options) but has limited support for complex geometries as of now.
@@ -96,7 +91,7 @@ TwoD_option = "MK"  # or 'GG'
 # In[ ]:
 
 
-# rtc_onlytimeseries = False
+rtc_onlytimeseries = False
 # rtc_timeseriesdata = data_path / 'rtc_timeseries.csv'
 data_path = Path()
 
@@ -116,6 +111,7 @@ modelnaam = Path(__file__).parent.name
 
 # met date=None zoeken we de laatste output-dir
 output_dir = get_output_dir(model_name=modelnaam, date=None)
+print(f"output_dir: {output_dir}")
 output_path = output_dir / "dhydro"
 
 if output_path.exists():
@@ -143,6 +139,10 @@ fn_regelmiddel = output_dir / "regelmiddel.gpkg"
 fn_kunstwerkopening = output_dir / "kunstwerkopening.gpkg"
 fn_afwateringseenheden = fnames["afwateringseenheden"]
 fn_modelgebieden = fnames["modelgebieden_gpkg"]
+fn_sturing = output_dir / "sturing.gpkg"
+fn_pumps = output_dir / "pomp.gpkg"
+fn_pumpstations = output_dir / "gemaal.gpkg"
+fn_observations = output_dir / "meetpunten.gpkg"
 
 # initialize the class
 hydamo = HyDAMO()
@@ -204,11 +204,12 @@ hydamo.snap_to_branch_and_drop(hydamo.culverts, hydamo.branches, snap_method="en
 hydamo.closing_device.read_gpkg_layer(
     fn_afsluitmiddel, layer_name="afsluitmiddel", index_col="code"
 )  # toevoegen afsluiters
-
-# hydamo.pumpstations.read_gpkg_layer(fn_pumpstations, layer_name="Gemaal", index_col="code")
-# hydamo.pumps.read_gpkg_layer(fn_pumps, layer_name="Pomp", index_col="code")
-# hydamo.management.read_gpkg_layer(fn_sturing, layer_name="Sturing", index_col="code")
-# hydamo.snap_to_branch_and_drop(hydamo.pumpstations, hydamo.branches, snap_method="overal", maxdist=10, drop_related=True)
+hydamo.pumpstations.read_gpkg_layer(fn_pumpstations, layer_name="Gemaal", index_col="code")
+hydamo.pumps.read_gpkg_layer(fn_pumps, layer_name="Pomp", index_col="code")
+hydamo.management.read_gpkg_layer(fn_sturing, layer_name="Sturing", index_col="code")
+hydamo.snap_to_branch_and_drop(
+    hydamo.pumpstations, hydamo.branches, snap_method="overal", maxdist=10, drop_related=True
+)
 
 # hydamo.bridges.read_gpkg_layer(fn_bridges, layer_name="Brug", index_col="code")
 # hydamo.snap_to_branch_and_drop(hydamo.bridges, hydamo.branches, snap_method="overal", maxdist=1100, drop_related=True)
@@ -220,19 +221,19 @@ hydamo.closing_device.read_gpkg_layer(
 
 
 # read boundaries
-boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
-boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
+# boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
+# boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
 
-spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
+# spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
 
-mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
+# mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
 
-boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
-    lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
-)
+# boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
+#     lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
+# )
 
 
-hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
+# hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 # Catchments and laterals
 
@@ -246,18 +247,18 @@ hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 # In[ ]:
 
 
-# read laterals
-laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
-spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
-laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
+# # read laterals
+# laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
+# spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
+# laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
 
-# setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
-laterals_df["globalid"] = laterals_df["code"]
+# # setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
+# laterals_df["globalid"] = laterals_df["code"]
 
-# nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
-afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
+# # nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
+# afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
 
-afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
+# afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
 # hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
 # lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
 
@@ -354,64 +355,7 @@ hydamo.structures.convert.culverts(hydamo.culverts, management_device=hydamo.clo
 #     profiles=hydamo.profile,
 # )
 
-# hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, management=hydamo.management)
-
-
-# Additional methods are available to add structures:
-
-# In[ ]:
-
-
-# hydamo.structures.add_rweir(
-#     id="rwtest",
-#     name="rwtest",
-#     branchid="W_1386_0",
-#     chainage=2.0,
-#     crestlevel=12.5,
-#     crestwidth=3.0,
-#     corrcoeff=1.0,
-# )
-# hydamo.structures.add_orifice(
-#     id="orifice_test",
-#     branchid="W_242213_0",
-#     chainage=43.0,
-#     crestlevel=18.00,
-#     gateloweredgelevel=18.5,
-#     crestwidth=7.5,
-#     corrcoeff=1.0,
-# )
-# hydamo.structures.add_uweir(
-#     id="uweir_test",
-#     branchid="W_242213_0",
-#     chainage=2.0,
-#     crestlevel=18.00,
-#     crestwidth=7.5,
-#     dischargecoeff=1.0,
-#     numlevels=4,
-#     yvalues="0.0 1.0 2.0 3.0",
-#     zvalues="19.0 18.0 18.2 19",
-# )
-# hydamo.structures.add_culvert(
-#     id="culvert_test",
-#     branchid="W_242213_0",
-#     chainage=42.0,
-#     rightlevel=17.2,
-#     leftlevel=17.1,
-#     length=5.,
-#     bedfrictiontype='StricklerKs',
-#     bedfriction=75,
-#     inletlosscoeff=0.6,
-#     outletlosscoeff = 1.0,
-#     crosssection = {'shape':'circle', 'diameter':0.6}
-# )
-
-
-# The resulting dataframes look like this:
-
-# In[ ]:
-
-
-hydamo.structures.rweirs_df.head()
+hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, management=hydamo.management)
 
 
 # Indicate structures that are at the same location and should be treated as a compound structure. The D-Hydro GUI does this automatically, but for DIMR-calculations this should be done here.
@@ -435,12 +379,20 @@ hydamo.structures.rweirs_df.head()
 # In[ ]:
 
 
+obs_dict = gpd.GeoDataFrame.from_file(fn_observations).to_dict("list")
 hydamo.observationpoints.add_points(
-    [Point(103871.554, 382260.925), Point(104424, 386069), Point(105825, 388296)],
-    ["AOW1", "AOW2", "AOW3"],
-    locationTypes=["1d", "1d", "1d"],
-    snap_distance=10.0,
+    obs_dict["geometry"],
+    obs_dict["id"],
+    locationTypes=obs_dict["locationtype"],
+    snap_distance=0.5,
 )
+
+# hydamo.observationpoints.add_points(
+#     [Point(199617,394885), Point(199421,393769), Point(199398,393770)],
+#     ["Obs_BV152054", "ObsS_96684","ObsO_test"],
+#     locationTypes=["1d", "1d", "1d"],
+#     snap_distance=10.0,
+# )
 
 
 # ### The 1D mesh
@@ -452,10 +404,10 @@ hydamo.observationpoints.add_points(
 
 structures = hydamo.structures.as_dataframe(
     rweirs=True,
-    bridges=True,
-    uweirs=True,
+    bridges=False,
+    uweirs=False,
     culverts=True,
-    orifices=True,
+    orifices=False,
     pumps=True,
 )
 
@@ -622,7 +574,7 @@ hydamo.crosssections.set_default_locations(missing)
 
 # In[ ]:
 
-
+"""
 hydamo.storagenodes.add_storagenode(
     id="sto_test",
     xy=(141001, 395030),
@@ -633,7 +585,7 @@ hydamo.storagenodes.add_storagenode(
     interpolate="linear",
     network=fm.geometry.netfile.network,
 )
-
+"""
 
 # Note that if 'usetable=True' an area-waterlevel relation is provided. The alternative, meant for an urban setting, implies constant storage between bedlevel and streetlevel and upwards. For most applications of D-HyDAMO, the first application is most relevant, like the example below.
 
@@ -642,19 +594,9 @@ hydamo.storagenodes.add_storagenode(
 # The HyDAMO database contains constant boundaries. They are added to the model:
 
 # In[ ]:
-# set zetten bij de Belgische Grens van Aa of Weerijs een afvoergolf met 50m3/s op het model
+
 
 hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=fm.geometry.netfile.network)
-series = afvoergolf(piekafvoer=50, start=datetime(2016, 6, 1), duur=timedelta(days=1), nalooptijd=timedelta(days=1))
-
-hydamo.external_forcings.boundary_nodes["AAOW"]["time"] = (
-    (series.index - series.index[0]).total_seconds() / 60.0
-).tolist()
-hydamo.external_forcings.boundary_nodes["AAOW"]["value"] = series.to_list()
-
-hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
-    f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
-)
 
 
 # However, we also need an upstream discharge boundary, which is not constant. We add a fictional time series, which can be read from Excel as well:
@@ -662,9 +604,9 @@ hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
 # In[ ]:
 
 
-series = pd.Series(np.sin(np.linspace(2, 8, 120) * -1) + 1.0)
-series.index = [pd.Timestamp("2016-06-01 00:00:00") + pd.Timedelta(hours=i) for i in range(120)]
-series.plot()
+# series = pd.Series(np.sin(np.linspace(2, 8, 120) * -1) + 1.0)
+# series.index = [pd.Timestamp("2016-06-01 00:00:00") + pd.Timedelta(hours=i) for i in range(120)]
+# series.plot()
 
 
 # There is also a fuction to convert laterals, but to run this we also need the RR model. Therefore, see below. It also possible to manually add boundaries and laterals as constants or timeseries. We implement the sinoid above as an upstream streamflow boundary and a lateral:
@@ -672,9 +614,9 @@ series.plot()
 # In[ ]:
 
 
-hydamo.external_forcings.add_boundary_condition(
-    "RVW_01", (197464.0, 392130.0), "dischargebnd", series, fm.geometry.netfile.network
-)
+# hydamo.external_forcings.add_boundary_condition(
+#     "RVW_01", (197464.0, 392130.0), "dischargebnd", series, fm.geometry.netfile.network
+# )
 
 
 # In[ ]:
@@ -732,13 +674,12 @@ hydamo.external_forcings.set_initial_waterdepth(1.5)
 
 # In[ ]:
 
-# extent is 250m rondom hydroobjecten
-modelgebied = get_modelgebied(modelgebied_gpkg=fnames["modelgebieden_gpkg"], modelnaam=modelnaam)
+
 if TwoD:
-    extent = modelgebied
+    extent = gpd.read_file(data_path / "2D_extent.shp").at[0, "geometry"]
     network = fm.geometry.netfile.network
-    cellsize = 40.0
-    rasterpath = fnames["rasters_dir"] / "ahn.tif"
+    cellsize = 50.0
+    rasterpath = data_path / "rasters/AHN_2m_clipped_filled.tif"
 
 
 # Add a rectangular mesh::
@@ -767,13 +708,12 @@ if TwoD:
 
 # In[ ]:
 
-# refinement laten we even zitten, want dat is best tricky
-Refine = True
-if TwoD & Refine:
-    buffer = hydamo.branches.buffer(60.0).union_all()
+
+if TwoD:
+    buffer = Polygon(hydamo.branches.buffer(50.0).union_all().exterior)
     if TwoD_option == "MK":
         print("Nodes before refinement:", network._mesh2d.mesh2d_node_x.size)
-        mesh.mesh2d_refine(network, buffer, 2)
+        mesh.mesh2d_refine(network, buffer, 1)
         print("Nodes after refinement:", network._mesh2d.mesh2d_node_x.size)
     elif TwoD_option == "GG":
         print("Nodes before refinement:", len(mesh_gg.meshgeom.get_values("nodex")))
@@ -790,7 +730,7 @@ if TwoD:
     if TwoD_option == "MK":
         print("Nodes before clipping:", network._mesh2d.mesh2d_node_x.size)
         for i, branch in hydamo.branches.iterrows():
-            uitknippen = branch.geometry.buffer(5)
+            uitknippen = branch.geometry.buffer(10.0)
             mesh.mesh2d_clip(network, uitknippen, inside=True)
         print("Nodes after clipping:", network._mesh2d.mesh2d_node_x.size)
     elif TwoD_option == "GG":
@@ -923,8 +863,7 @@ if RTC:
             fm,
             output_path=output_path,
             rtc_timestep=60.0,
-            complex_controllers_folder=data_path
-            / "complex_controllers",  # location where user defined XLM-code should be located
+            #           complex_controllers_folder = data_path # location where user defined XML-code should be located
         )
 
 
@@ -962,12 +901,17 @@ if RTC and not rtc_onlytimeseries:
 # In[ ]:
 
 
-if RTC and not rtc_onlytimeseries:
+if RTC and rtc_onlytimeseries:
     if not hydamo.management.typecontroller.empty:
         timeseries = pd.read_csv(data_path / "timecontrollers.csv")
         timeseries.index = timeseries.Time
 
-        drtcmodel.from_hydamo(pid_settings=pid_settings, interval_settings=interval_settings, timeseries=timeseries)
+if RTC:
+    drtcmodel.from_hydamo(
+        pid_settings=pid_settings,
+        interval_settings=interval_settings,
+        #       timeseries=timeseries
+    )
 
 
 # Additional controllers, that are not included in D-HyDAMO DAMO2.2 might be specified like this:
@@ -975,63 +919,9 @@ if RTC and not rtc_onlytimeseries:
 # In[ ]:
 
 
-if RTC and not rtc_onlytimeseries:
+if RTC and rtc_onlytimeseries:
     drtcmodel.add_time_controller(
         structure_id="S_96548", steering_variable="Crest level (s)", data=timeseries.loc[:, "S_96548"]
-    )
-
-
-# In[ ]:
-
-
-if RTC and not rtc_onlytimeseries:
-    # construct a times series to use as a PID controller setpoint
-    series = pd.Series(np.sin(np.linspace(2, 8, 120) * -1) + 13.0)
-    series.index = [pd.Timestamp("2016-06-01 00:00:00") + pd.Timedelta(hours=i) for i in range(120)]
-    drtcmodel.add_pid_controller(
-        structure_id="S_96544",
-        observation_location="ObsS_96544",
-        steering_variable="Crest level (s)",
-        target_variable="Water level (op)",
-        setpoint=series,
-        ki=0.001,
-        kp=0.0,
-        kd=0,
-        max_speed=0.00033,
-        upper_bound=13.4,
-        lower_bound=12.8,
-        interpolation_option="LINEAR",
-        extrapolation_option="BLOCK",
-    )
-
-    # define an interval controller with a constant setpoint for an orifice gate
-    drtcmodel.add_interval_controller(
-        structure_id="orifice_test",
-        observation_location="ObsO_test",
-        steering_variable="Gate lower edge level (s)",
-        target_variable="Discharge (op)",
-        setpoint=13.2,
-        setting_below=12.8,
-        setting_above=13.4,
-        max_speed=0.00033,
-        deadband=0.1,
-        interpolation_option="LINEAR",
-        extrapolation_option="BLOCK",
-    )
-
-    # and add a PID controller to a pump capacity
-    drtcmodel.add_pid_controller(
-        structure_id="113GIS",
-        observation_location="ObsP_113GIS",
-        steering_variable="Capacity (p)",
-        target_variable="Water level (op)",
-        setpoint=0.3,
-        ki=0.001,
-        kp=0.0,
-        kd=0,
-        max_speed=0.00033,
-        upper_bound=0.4,
-        lower_bound=0.2,
     )
 
 
@@ -1417,6 +1307,7 @@ else:
     hydamo.external_forcings.convert.laterals(
         locations=hydamo.laterals,
         # lateral_discharges=lateral_discharges,
+        lateral_discharges=None,
         rr_boundaries=None,
     )
 
@@ -1574,7 +1465,7 @@ fm.output.mapinterval = [
     fm.time.tstop,
 ]  # Map file output, given as 'interval' 'start period' 'end period' [s].
 fm.output.rstinterval = [
-    3600,
+    86400.0,
     fm.time.tstart,
     fm.time.tstop,
 ]  # Restart file output, given as 'interval' 'start period' 'end period' [s].
@@ -1585,7 +1476,6 @@ fm.output.hisinterval = [
 ]  # History output, given as 'interval' 'start period' 'end period' [s].
 fm.output.wrimap_flow_analysis = 1  # write information for flow analysis
 
-fm.output.wrihis_discharge = True
 
 # The default sediment model settings raise an error in DIMR. Delete them.
 
