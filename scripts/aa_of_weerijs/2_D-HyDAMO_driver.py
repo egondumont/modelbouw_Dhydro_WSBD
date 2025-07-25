@@ -177,7 +177,7 @@ hydamo.profile.read_gpkg_layer(
     index_col="code",
 )
 
-hydamo.snap_to_branch_and_drop(hydamo.profile, hydamo.branches, snap_method="intersecting", drop_related=False)
+hydamo.snap_to_branch_and_drop(hydamo.profile, hydamo.branches, snap_method="centroid", drop_related=False)
 ruwheid = hydamo.profile.copy(deep=True)
 ruwheid = ruwheid.rename(columns={"ruwheidswaardelaag": "ruwheidlaag", "ruwheidswaardehoog": "ruwheidhoog"})
 ruwheid["profielpuntid"] = ruwheid["globalid"]
@@ -384,7 +384,7 @@ hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, managem
 obs_df = gpd.GeoDataFrame.from_file(fn_observations)
 
 # voegen handmatig AOW toe
-obs_df.loc[-1] = {"id": "AOW", "locationtype": "id", "geometry": Point(103858, 382242)}
+obs_df.loc[-1] = {"id": "AOW", "locationtype": "1d", "geometry": Point(103855.609, 382240.698)}
 obs_dict = obs_df.to_dict("list")
 hydamo.observationpoints.add_points(
     obs_dict["geometry"],
@@ -468,7 +468,7 @@ hydamo.crosssections.convert.profiles(
 
 
 missing = hydamo.crosssections.get_branches_without_crosssection()
-print(f"{len(missing)} branches are still missing a cross section.")
+print(f"LET OP (!) deze branches missen profielen {missing}")
 
 
 # We plot the missing ones.
