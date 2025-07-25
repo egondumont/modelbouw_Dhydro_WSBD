@@ -385,7 +385,7 @@ obs_df = gpd.GeoDataFrame.from_file(fn_observations)
 
 # voegen handmatig AOW toe
 obs_df.loc[-1] = {"id": "AOW", "locationtype": "id", "geometry": Point(103858, 382242)}
-obs_dict = gpd.GeoDataFrame.from_file(fn_observations).to_dict("list")
+obs_dict = obs_df.to_dict("list")
 hydamo.observationpoints.add_points(
     obs_dict["geometry"],
     obs_dict["id"],
