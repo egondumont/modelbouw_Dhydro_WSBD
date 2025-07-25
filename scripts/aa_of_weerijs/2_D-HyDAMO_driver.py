@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import warnings
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import contextily as cx
@@ -28,7 +29,9 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Polygon
 
+from wbd_tools.case_conversions import sentence_to_snake_case
 from wbd_tools.fnames import get_fnames, get_output_dir
+from wbd_tools.hypothetisch import afvoergolf
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -53,7 +56,7 @@ from hydrolib.dhydamo.core.drtc import DRTCModel
 
 # In[4]:
 from hydrolib.dhydamo.core.hydamo import HyDAMO
-from hydrolib.dhydamo.geometry import mesh
+from hydrolib.dhydamo.geometry import mesh, spatial
 from hydrolib.dhydamo.geometry.gridgeom.links1d2d import Links1d2d
 from hydrolib.dhydamo.geometry.mesh2d_gridgeom import Rectangular
 from hydrolib.dhydamo.geometry.viz import plot_network
@@ -221,19 +224,19 @@ hydamo.snap_to_branch_and_drop(
 
 
 # read boundaries
-# boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
-# boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
+boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
+boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
 
-# spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
+spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
 
-# mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
+mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
 
-# boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
-#     lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
-# )
+boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
+    lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
+)
 
 
-# hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
+hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 # Catchments and laterals
 
@@ -613,6 +616,18 @@ hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=f
 
 # In[ ]:
 
+# we zetten een afvoergolf met piek van 20 m3/s op Aa of Weerijs bij Belgische grens
+series = afvoergolf(piekafvoer=20, start=datetime(2016, 6, 1), duur=timedelta(days=1), nalooptijd=timedelta(days=1))
+
+
+hydamo.external_forcings.boundary_nodes["AAOW"]["time"] = (
+    (series.index - series.index[0]).total_seconds() / 60.0
+).tolist()
+hydamo.external_forcings.boundary_nodes["AAOW"]["value"] = series.to_list()
+
+hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
+    f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
+)
 
 # hydamo.external_forcings.add_boundary_condition(
 #     "RVW_01", (197464.0, 392130.0), "dischargebnd", series, fm.geometry.netfile.network
@@ -1459,6 +1474,7 @@ fm.output.ncformat = 4  # parameter setting advised by Deltares for better perfo
 fm.output.ncnoforcedflush = 1  # parameter setting advised by Deltares for better performance
 fm.output.ncnounlimited = 1  # parameter setting advised by Deltares for better performance
 fm.output.wrimap_wet_waterdepth_threshold = 0.01  # Waterdepth threshold above which a grid point counts as 'wet'
+fm.output.wrihis_discharge = True  # discharge at stations
 fm.output.mapinterval = [
     1200.0,
     fm.time.tstart,
