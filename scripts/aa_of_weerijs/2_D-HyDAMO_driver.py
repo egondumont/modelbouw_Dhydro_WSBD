@@ -219,21 +219,21 @@ hydamo.snap_to_branch_and_drop(
 
 # In[ ]:
 
-"""
+
 # read boundaries
-boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
-boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
+# boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
+# boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
 
-spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
+# spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
 
-mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
+# mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
 
-boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
-    lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
-)
+# boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
+#     lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
+# )
 
 
-hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
+# hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 # Catchments and laterals
 
@@ -247,21 +247,21 @@ hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 # In[ ]:
 
 
-# read laterals
-laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
-spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
-laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
+# # read laterals
+# laterals_df = gpd.read_file(fn_afwateringseenheden, layer="lateralen")
+# spatial.find_nearest_branch(hydamo.branches, laterals_df, method="overal", maxdist=5)
+# laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
 
-# setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
-laterals_df["globalid"] = laterals_df["code"]
+# # setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
+# laterals_df["globalid"] = laterals_df["code"]
 
-# nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
-afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
+# # nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
+# afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
 
-afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
-hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
-lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
-"""
+# afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
+# hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
+# lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
+
 
 # In[ ]:
 
@@ -356,8 +356,6 @@ hydamo.structures.convert.culverts(hydamo.culverts, management_device=hydamo.clo
 # )
 
 hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, management=hydamo.management)
-"""
-
 
 
 # Indicate structures that are at the same location and should be treated as a compound structure. The D-Hydro GUI does this automatically, but for DIMR-calculations this should be done here.
@@ -369,7 +367,7 @@ hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, managem
 # cmpnd_list = [["D_24521", "D_14808"],["D_21450", "D_19758"],["D_19757", "D_21451"]]
 # hydamo.structures.convert.compound_structures(cmpnd_ids, cmpnd_list)
 
-"""
+
 # ### Observation points
 
 # Observation points are now written in the new format, where one can discriminate between 1D ('1d') and 2D ('2d') observation points. This can be done using the optional argument 'locationTypes'. If it is omitted, all points are assumed to be 1d. 1D-points are always snapped to a the nearest branch. 2D-observation points are always defined by their X/Y-coordinates.
@@ -1296,7 +1294,7 @@ if RR:
 
 # In[ ]:
 
-"""
+
 if RR:
     hydamo.external_forcings.convert.laterals(
         hydamo.laterals,
@@ -1308,7 +1306,8 @@ if RR:
 else:
     hydamo.external_forcings.convert.laterals(
         locations=hydamo.laterals,
-        lateral_discharges=lateral_discharges,
+        # lateral_discharges=lateral_discharges,
+        lateral_discharges=None,
         rr_boundaries=None,
     )
 
@@ -1380,7 +1379,7 @@ if RR:
     cx.add_basemap(ax, crs=28992, source=cx.providers.OpenStreetMap.Mapnik)
     fig.tight_layout()
 
-"""
+
 # ## Writing the model
 
 # Now we call Hydrolib-core functionality to write the model. First, we initialize an object that converts all dataframes to Hydrolib-core objects. Then we add these models to the file structure of the FM model.
