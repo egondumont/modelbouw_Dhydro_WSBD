@@ -164,9 +164,13 @@ hydamo.branches.show_gpkg(fn_branches)
 # - ends: for lines, based on the cumulative distance of the lines' ends to the branch.
 
 # In[ ]:
+# dit zijn vispassages die er in preprocessing uit moeten (!), daarna kun je dit weggooien en de regel eronder uitcommenten
+gdf = gpd.read_file(fn_branches, layer="HydroObject")
+drop_branches = ["OVK20313", "OVK20310", "OVK50059", "OVK50060", "OVK50062", "OVK50059", "OVK20309", "OVK50061"]
+gdf = gdf[~gdf.code.isin(drop_branches)]
+hydamo.branches.set_data(gdf, index_col="code")
+# hydamo.branches.read_gpkg_layer(fn_branches, layer_name="HydroObject", index_col="code")
 
-
-hydamo.branches.read_gpkg_layer(fn_branches, layer_name="HydroObject", index_col="code")
 
 hydamo.profile.read_gpkg_layer(
     fn_crosssections,
@@ -177,7 +181,10 @@ hydamo.profile.read_gpkg_layer(
     index_col="code",
 )
 
-hydamo.snap_to_branch_and_drop(hydamo.profile, hydamo.branches, snap_method="centroid", drop_related=False)
+
+hydamo.snap_to_branch_and_drop(
+    hydamo.profile, hydamo.branches, snap_method="centroid", drop_related=False, maxdist=0.5
+)
 ruwheid = hydamo.profile.copy(deep=True)
 ruwheid = ruwheid.rename(columns={"ruwheidswaardelaag": "ruwheidlaag", "ruwheidswaardehoog": "ruwheidhoog"})
 ruwheid["profielpuntid"] = ruwheid["globalid"]
@@ -468,7 +475,24 @@ hydamo.crosssections.convert.profiles(
 
 
 missing = hydamo.crosssections.get_branches_without_crosssection()
-print(f"LET OP (!) deze branches missen profielen {missing}")
+
+print(f"LET OP (!) Deze branches hebben geen profielen gekregen in pre-processing: {missing}")
+# dit trucje passen we toe om de meest logische profielen door te kopieren. Zodra
+for branch_id in missing:
+    chainage = round(hydamo.branches.at[branch_id, "geometry"].length / 2, 1)  # NOQA
+    definition_id = branch_id.strip("d")
+    id = f"{branch_id}_{chainage}"
+    hydamo.crosssections.crosssection_loc[id] = {
+        "id": id,
+        "branchid": branch_id,
+        "chainage": chainage,
+        "shift": 0.0,
+        "definitionId": definition_id,
+    }
+
+missing = hydamo.crosssections.get_branches_without_crosssection()
+if missing:
+    raise ValueError(f"Deze branches missen profielen {missing}")
 
 
 # We plot the missing ones.
