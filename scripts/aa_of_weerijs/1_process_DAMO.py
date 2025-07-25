@@ -10,6 +10,7 @@ from wbd_tools.fnames import create_output_dir, get_fnames
 from wbd_tools.process_damo import (
     ProcessClosings,
     ProcessCulverts,
+    ProcessManagement,
     ProcessNetwork,
     ProcessProfiles,
     ProcessPumps,
@@ -38,6 +39,7 @@ activities = {
     "weirs": True,
     "pumping": True,
     "closing": True,
+    "management": True,
 }
 
 checkbuffer = [0.5, 5]
@@ -68,6 +70,7 @@ if activities["laden"]:
             "gemaal",
             "pomp",
             "stuw",
+            "sturing",
         ]
     )
     logging.info("finished data loading")
@@ -108,6 +111,12 @@ if activities["closing"]:
     process_closings = ProcessClosings(output_dir, checkbuffer)
     process_closings.run()
     logging.info("finished processing closing mechanisms")
+
+if activities["management"]:
+    logging.info("Start processing management")
+    process_management = ProcessManagement(output_dir, checkbuffer)
+    process_management.run(mask=modelgebied)
+    logging.info("finished processing management")
 
 logging.info("Finished")
 logging.shutdown()
