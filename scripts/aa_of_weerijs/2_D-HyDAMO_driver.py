@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-from shapely.geometry import Polygon
+from shapely.geometry import Point, Polygon
 
 from wbd_tools.case_conversions import sentence_to_snake_case
 from wbd_tools.fnames import get_fnames, get_output_dir
@@ -381,7 +381,10 @@ hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, managem
 
 # In[ ]:
 
+obs_df = gpd.GeoDataFrame.from_file(fn_observations)
 
+# voegen handmatig AOW toe
+obs_df.loc[-1] = {"id": "AOW", "locationtype": "id", "geometry": Point(103858, 382242)}
 obs_dict = gpd.GeoDataFrame.from_file(fn_observations).to_dict("list")
 hydamo.observationpoints.add_points(
     obs_dict["geometry"],

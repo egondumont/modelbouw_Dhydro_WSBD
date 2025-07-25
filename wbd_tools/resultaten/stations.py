@@ -7,11 +7,15 @@ import xarray as xr
 from hydrolib.core.dflowfm.mdu.models import FMModel
 
 
-def stations_to_folium_map(mdu_file):
+def stations_to_folium_map(mdu_file, epsg: int | None = 28992):
     fm = FMModel(mdu_file)
     his_file = fm.output.hisfile.filepath
     if his_file is None:
         his_file = mdu_file.parent.joinpath(f"DFM_OUTPUT_{mdu_file.stem}", f"{mdu_file.stem}_his.nc")
+    if epsg is None:
+        epsg = ds["projected_coordinate_system"].attrs["epsg"]
+    if epsg is None:
+        raise ValueError("Define epsg as projected_coordinate_system is not defined in netcdf_file: {his_file}")
     with xr.open_dataset(his_file) as ds:
         gdf = gpd.GeoDataFrame(
             data={
@@ -19,7 +23,7 @@ def stations_to_folium_map(mdu_file):
                 "station_name": np.char.strip(np.char.decode(ds["station_name"].values, "utf-8")),
             },
             geometry=gpd.GeoSeries.from_xy(ds["station_x_coordinate"].values, ds["station_y_coordinate"].values),
-            crs=ds["projected_coordinate_system"].attrs["epsg"],
+            crs=epsg,
         )
         discharge = ds["discharge_magnitude"].to_numpy()
         waterlevel = ds["waterlevel"].to_numpy()
