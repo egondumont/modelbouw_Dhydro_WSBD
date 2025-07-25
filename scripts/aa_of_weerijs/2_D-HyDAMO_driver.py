@@ -562,14 +562,14 @@ fig.tight_layout()
 
 
 # Set a default cross section
-profiel = np.array([[0, 21], [2, 19], [7, 19], [9, 21]])
-default = hydamo.crosssections.add_yz_definition(
-    yz=profiel, thalweg=4.5, roughnesstype="StricklerKs", roughnessvalue=25.0, name="default"
-)
+# profiel = np.array([[0, 21], [2, 19], [7, 19], [9, 21]])
+# default = hydamo.crosssections.add_yz_definition(
+#     yz=profiel, thalweg=4.5, roughnesstype="StricklerKs", roughnessvalue=25.0, name="default"
+# )
 
-hydamo.crosssections.set_default_definition(definition=default, shift=0.0)
-# hydamo.crosssections.set_default_locations(missing_after_interpolation)
-hydamo.crosssections.set_default_locations(missing)
+# hydamo.crosssections.set_default_definition(definition=default, shift=0.0)
+# # hydamo.crosssections.set_default_locations(missing_after_interpolation)
+# hydamo.crosssections.set_default_locations(missing)
 
 
 # ### Storage nodes
