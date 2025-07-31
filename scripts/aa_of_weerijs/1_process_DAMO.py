@@ -61,6 +61,7 @@ if activities["laden"]:
     get_data = GetData(json_dir=json_dir, output_dir=output_dir, poly_mask=modelgebied)
     get_data.run(
         json_subset=[
+            "vispassage",
             "hydroobject",
             "kunstwerkopening",
             "regelmiddel",

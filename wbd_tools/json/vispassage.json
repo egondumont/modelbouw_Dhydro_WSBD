@@ -1,0 +1,51 @@
+{
+ "object": "vispassage",
+ "source": {
+  "type": "",
+  "path": "input/modellen/data/acceptatiedatabase.gdb",
+  "layer": "vispassage",
+  "filter": "",
+  "filter_type": "include",
+  "query": ""
+ },
+ "geometry": {
+  "drop": false,
+  "func": ""
+ },
+ "related_data": {
+  "path": "",
+  "layer": "",
+  "mapping_col_src": "",
+  "mapping_col_rel": ""
+ },
+ "index": {
+  "name": "code",
+  "src_col": "CODE"
+ },
+ "attributes": [
+  {
+   "name": "naam",
+   "type": "String",
+   "required": false,
+   "src_col": "NAAM",
+   "func": "",
+   "default": ""
+  },
+  {
+   "name": "bovenstroomse_drempelhoogte",
+   "type": "Float",
+   "required": false,
+   "src_col": "WS_HGT_BOVSRT_VISPAS",
+   "func": "",
+   "default": ""
+  },
+  {
+   "name": "naam",
+   "type": "String",
+   "required": false,
+   "src_col": "SOORTVISPASSAGE",
+   "func": "",
+   "default": ""
+  }
+ ]
+}

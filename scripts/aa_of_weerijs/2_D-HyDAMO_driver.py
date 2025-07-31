@@ -18,6 +18,7 @@ import os
 import shutil
 import sys
 import warnings
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import contextily as cx
@@ -26,9 +27,11 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-from shapely.geometry import Polygon
+from shapely.geometry import Point, Polygon
 
+from wbd_tools.case_conversions import sentence_to_snake_case
 from wbd_tools.fnames import get_fnames, get_output_dir
+from wbd_tools.hypothetisch import afvoergolf
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
@@ -53,7 +56,7 @@ from hydrolib.dhydamo.core.drtc import DRTCModel
 
 # In[4]:
 from hydrolib.dhydamo.core.hydamo import HyDAMO
-from hydrolib.dhydamo.geometry import mesh
+from hydrolib.dhydamo.geometry import mesh, spatial
 from hydrolib.dhydamo.geometry.gridgeom.links1d2d import Links1d2d
 from hydrolib.dhydamo.geometry.mesh2d_gridgeom import Rectangular
 from hydrolib.dhydamo.geometry.viz import plot_network
@@ -161,9 +164,13 @@ hydamo.branches.show_gpkg(fn_branches)
 # - ends: for lines, based on the cumulative distance of the lines' ends to the branch.
 
 # In[ ]:
+# dit zijn vispassages die er in preprocessing uit moeten (!), daarna kun je dit weggooien en de regel eronder uitcommenten
+gdf = gpd.read_file(fn_branches, layer="HydroObject")
+drop_branches = ["OVK20313", "OVK20310", "OVK50059", "OVK50060", "OVK50062", "OVK50059", "OVK20309", "OVK50061"]
+gdf = gdf[~gdf.code.isin(drop_branches)]
+hydamo.branches.set_data(gdf, index_col="code")
+# hydamo.branches.read_gpkg_layer(fn_branches, layer_name="HydroObject", index_col="code")
 
-
-hydamo.branches.read_gpkg_layer(fn_branches, layer_name="HydroObject", index_col="code")
 
 hydamo.profile.read_gpkg_layer(
     fn_crosssections,
@@ -174,7 +181,10 @@ hydamo.profile.read_gpkg_layer(
     index_col="code",
 )
 
-hydamo.snap_to_branch_and_drop(hydamo.profile, hydamo.branches, snap_method="intersecting", drop_related=False)
+
+hydamo.snap_to_branch_and_drop(
+    hydamo.profile, hydamo.branches, snap_method="centroid", drop_related=False, maxdist=0.5
+)
 ruwheid = hydamo.profile.copy(deep=True)
 ruwheid = ruwheid.rename(columns={"ruwheidswaardelaag": "ruwheidlaag", "ruwheidswaardehoog": "ruwheidhoog"})
 ruwheid["profielpuntid"] = ruwheid["globalid"]
@@ -221,19 +231,19 @@ hydamo.snap_to_branch_and_drop(
 
 
 # read boundaries
-# boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
-# boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
+boundaries_df = gpd.read_file(fn_modelgebieden, layer="randvoorwaarden")
+boundaries_df = boundaries_df[boundaries_df["modelgebied"].apply(sentence_to_snake_case) == modelnaam]
 
-# spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
+spatial.find_nearest_branch(hydamo.branches, boundaries_df, method="overal", maxdist=5)
 
-# mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
+mask = boundaries_df["typerandvoorwaarde"] == "waterstand"
 
-# boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
-#     lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
-# )
+boundaries_df.loc[mask, "geometry"] = boundaries_df[mask]["branch_id"].apply(
+    lambda x: hydamo.branches.at[x, "geometry"].boundary.geoms[1]
+)
 
 
-# hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
+hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 
 # Catchments and laterals
 
@@ -378,13 +388,29 @@ hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, managem
 
 # In[ ]:
 
+obs_df = gpd.GeoDataFrame.from_file(fn_observations)
+bnd_obs_df = boundaries_df[["code", "geometry"]].copy().rename(columns={"code": "id"})
+bnd_obs_df["locationtype"] = "1d"
 
-obs_dict = gpd.GeoDataFrame.from_file(fn_observations).to_dict("list")
+ts_obs_df = gpd.GeoDataFrame(
+    [
+        {"id": "4260_TDB", "geometry": Point(97930.005, 383100)},
+        {"id": "4251_TDB", "geometry": Point(103900.005, 383140)},
+        {"id": "4501_TDB", "geometry": Point(111300.005, 398280)},
+    ],
+    crs=28992,
+)
+ts_obs_df["locationtype"] = "1d"
+
+
+# voegen handmatig AOW toe
+
+obs_dict = pd.concat([obs_df, bnd_obs_df, ts_obs_df], axis=0).to_dict("list")
 hydamo.observationpoints.add_points(
     obs_dict["geometry"],
     obs_dict["id"],
     locationTypes=obs_dict["locationtype"],
-    snap_distance=0.5,
+    snap_distance=10,
 )
 
 # hydamo.observationpoints.add_points(
@@ -462,7 +488,24 @@ hydamo.crosssections.convert.profiles(
 
 
 missing = hydamo.crosssections.get_branches_without_crosssection()
-print(f"{len(missing)} branches are still missing a cross section.")
+
+print(f"LET OP (!) Deze branches hebben geen profielen gekregen in pre-processing: {missing}")
+# dit trucje passen we toe om de meest logische profielen door te kopieren. Zodra
+for branch_id in missing:
+    chainage = round(hydamo.branches.at[branch_id, "geometry"].length / 2, 1)  # NOQA
+    definition_id = branch_id.strip("d")
+    id = f"{branch_id}_{chainage}"
+    hydamo.crosssections.crosssection_loc[id] = {
+        "id": id,
+        "branchid": branch_id,
+        "chainage": chainage,
+        "shift": 0.0,
+        "definitionId": definition_id,
+    }
+
+missing = hydamo.crosssections.get_branches_without_crosssection()
+if missing:
+    raise ValueError(f"Deze branches missen profielen {missing}")
 
 
 # We plot the missing ones.
@@ -532,14 +575,14 @@ fig.tight_layout()
 
 
 # Set a default cross section
-profiel = np.array([[0, 21], [2, 19], [7, 19], [9, 21]])
-default = hydamo.crosssections.add_yz_definition(
-    yz=profiel, thalweg=4.5, roughnesstype="StricklerKs", roughnessvalue=25.0, name="default"
-)
+# profiel = np.array([[0, 21], [2, 19], [7, 19], [9, 21]])
+# default = hydamo.crosssections.add_yz_definition(
+#     yz=profiel, thalweg=4.5, roughnesstype="StricklerKs", roughnessvalue=25.0, name="default"
+# )
 
-hydamo.crosssections.set_default_definition(definition=default, shift=0.0)
-# hydamo.crosssections.set_default_locations(missing_after_interpolation)
-hydamo.crosssections.set_default_locations(missing)
+# hydamo.crosssections.set_default_definition(definition=default, shift=0.0)
+# # hydamo.crosssections.set_default_locations(missing_after_interpolation)
+# hydamo.crosssections.set_default_locations(missing)
 
 
 # ### Storage nodes
@@ -612,6 +655,31 @@ hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=f
 # There is also a fuction to convert laterals, but to run this we also need the RR model. Therefore, see below. It also possible to manually add boundaries and laterals as constants or timeseries. We implement the sinoid above as an upstream streamflow boundary and a lateral:
 
 # In[ ]:
+
+# we zetten een afvoergolf met piek van 20 m3/s op Aa of Weerijs bij Belgische grens
+series = afvoergolf(piekafvoer=20, start=datetime(2016, 6, 1), duur=timedelta(days=1), nalooptijd=timedelta(days=1))
+
+
+hydamo.external_forcings.boundary_nodes["AAOW"]["time"] = (
+    (series.index - series.index[0]).total_seconds() / 60.0
+).tolist()
+hydamo.external_forcings.boundary_nodes["AAOW"]["value"] = series.to_list()
+
+hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
+    f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
+)
+
+# we zetten een afvoergolf met piek van 5 m3/s op Berkenbeek bij Belgische grens
+series = afvoergolf(piekafvoer=5, start=datetime(2016, 6, 1), duur=timedelta(hours=12), nalooptijd=timedelta(hours=36))
+
+hydamo.external_forcings.boundary_nodes["BEB"]["time"] = (
+    (series.index - series.index[0]).total_seconds() / 60.0
+).tolist()
+hydamo.external_forcings.boundary_nodes["BEB"]["value"] = series.to_list()
+
+hydamo.external_forcings.boundary_nodes["BEB"]["time_unit"] = (
+    f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
+)
 
 
 # hydamo.external_forcings.add_boundary_condition(
@@ -1459,6 +1527,7 @@ fm.output.ncformat = 4  # parameter setting advised by Deltares for better perfo
 fm.output.ncnoforcedflush = 1  # parameter setting advised by Deltares for better performance
 fm.output.ncnounlimited = 1  # parameter setting advised by Deltares for better performance
 fm.output.wrimap_wet_waterdepth_threshold = 0.01  # Waterdepth threshold above which a grid point counts as 'wet'
+fm.output.wrihis_discharge = True  # discharge at stations
 fm.output.mapinterval = [
     1200.0,
     fm.time.tstart,
