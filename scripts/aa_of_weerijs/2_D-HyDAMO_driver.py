@@ -389,15 +389,28 @@ hydamo.structures.convert.pumps(hydamo.pumpstations, pumps=hydamo.pumps, managem
 # In[ ]:
 
 obs_df = gpd.GeoDataFrame.from_file(fn_observations)
+bnd_obs_df = boundaries_df[["code", "geometry"]].copy().rename(columns={"code": "id"})
+bnd_obs_df["locationtype"] = "1d"
+
+ts_obs_df = gpd.GeoDataFrame(
+    [
+        {"id": "4260_TDB", "geometry": Point(97930.005, 383100)},
+        {"id": "4251_TDB", "geometry": Point(103900.005, 383140)},
+        {"id": "4501_TDB", "geometry": Point(111300.005, 398280)},
+    ],
+    crs=28992,
+)
+ts_obs_df["locationtype"] = "1d"
+
 
 # voegen handmatig AOW toe
-obs_df.loc[-1] = {"id": "AOW", "locationtype": "1d", "geometry": Point(103855.609, 382240.698)}
-obs_dict = obs_df.to_dict("list")
+
+obs_dict = pd.concat([obs_df, bnd_obs_df, ts_obs_df], axis=0).to_dict("list")
 hydamo.observationpoints.add_points(
     obs_dict["geometry"],
     obs_dict["id"],
     locationTypes=obs_dict["locationtype"],
-    snap_distance=0.5,
+    snap_distance=10,
 )
 
 # hydamo.observationpoints.add_points(
@@ -655,6 +668,19 @@ hydamo.external_forcings.boundary_nodes["AAOW"]["value"] = series.to_list()
 hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
     f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
 )
+
+# we zetten een afvoergolf met piek van 5 m3/s op Berkenbeek bij Belgische grens
+series = afvoergolf(piekafvoer=5, start=datetime(2016, 6, 1), duur=timedelta(hours=12), nalooptijd=timedelta(hours=36))
+
+hydamo.external_forcings.boundary_nodes["BEB"]["time"] = (
+    (series.index - series.index[0]).total_seconds() / 60.0
+).tolist()
+hydamo.external_forcings.boundary_nodes["BEB"]["value"] = series.to_list()
+
+hydamo.external_forcings.boundary_nodes["BEB"]["time_unit"] = (
+    f"minutes since {series.index[0].strftime('%Y-%m-%d %H:%M:%S')}"
+)
+
 
 # hydamo.external_forcings.add_boundary_condition(
 #     "RVW_01", (197464.0, 392130.0), "dischargebnd", series, fm.geometry.netfile.network
