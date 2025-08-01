@@ -1,5 +1,4 @@
 # this scripts determines the dangling nodes of a shape (lines)
-# real end and begin nodes can be turned of in GIS (count number is 1)
 # helpfull in determining the locations were snapping might be needed
 # Rineke Hulsman, RHDHV, 13 january 2021
 # Egon Dumont, WSBD, 29 January 2025
@@ -12,6 +11,8 @@ import numpy as np
 import pandas as pd
 from shapely import distance
 from shapely.ops import snap, split
+
+from wbd_tools.process_damo import ProcessProfiles
 
 
 class ProcessNetwork:
@@ -34,9 +35,9 @@ class ProcessNetwork:
             I_1 = waterloop.sindex.query(start_point, predicate="intersects")
             # gdb-index of geometries intersecting with end point of current hydroobject:
             I_2 = waterloop.sindex.query(end_point, predicate="intersects")
-            I_self = []
-            I_conn_s = []
-            I_conn_e = []
+            I_self = []  # indexes of hydroobjects that intersect with both the start and end vertex of the current hydroobject, and index of the current hydroobject
+            I_conn_s = []  # indexes of hydroobjects which start of end vertex intersect with start vertex of current hydroobject
+            I_conn_e = []  # indexes of hydroobjects which start of end vertex intersect with end vertex of current hydroobject
             str_start = ""
             str_end = ""
 
@@ -52,7 +53,7 @@ class ProcessNetwork:
                         [waterloop.loc[check_i, "geometry"].coords.xy[0][-1]],
                         [waterloop.loc[check_i, "geometry"].coords.xy[1][-1]],
                     )
-                    # If both hydroobjects only connect at their ends (i.e. no y-shape-connection)
+                    # If hydroobject start only connects to start or end vertice of other hydroobject (i.e. no connection to the edge of the side of another hydroobject)
                     if start_point == target_start or start_point == target_end:
                         I_conn_s.append(check_i)
 
@@ -66,11 +67,13 @@ class ProcessNetwork:
                         [waterloop.loc[check_i, "geometry"].coords.xy[0][-1]],
                         [waterloop.loc[check_i, "geometry"].coords.xy[1][-1]],
                     )
-                    # If both hydroobjects only connect at their ends (i.e. no y-shape-connection):
+                    # If hydroobject end only connects to start or end vertice of other hydroobject (i.e. no connection to the edge of the side of another hydroobject)
                     if end_point == target_start or end_point == target_end:
                         I_conn_e.append(check_i)
 
-            if len(I_conn_s) == 0:  # If there is no upstream hydroobject which touches the current hydroobject...
+            if (
+                len(I_conn_s) == 0
+            ):  # If there is no upstream hydroobject which start or end vertex intersects with the current hydroobject
                 start_buffer = start_point.buffer(self.checkbuffer[0])
                 i_temp = waterloop.sindex.query(start_buffer, predicate="intersects")
                 i_potential = []
@@ -111,11 +114,8 @@ class ProcessNetwork:
                             str_start = f"start punt verplaatst naar punt binnen {self.checkbuffer[1]}, "
                         else:
                             str_start = "geen punt in de buurt start, split doel waterloop, "
-                            splitpoints.append(
-                                start_point[0]
-                            )  # store point geometries where hydroobject should be split
-                        # print(all_targets)
-                        # print(start_point.distance(all_targets).sort)
+                            # store point geometries where hydroobject should be split:
+                            splitpoints.append(start_point[0])
 
                 else:
                     target_start = gpd.points_from_xy(
@@ -208,8 +208,7 @@ class ProcessNetwork:
 
             waterloop.loc[index, "commentconnect"] = str_start + str_end
 
-        def split_line_by_point(line, point, tolerance: float = self.checkbuffer[0]):
-            return split(snap(line, point, tolerance), point)
+        # read corrected profiles
 
         # spit hydroobjects where other hydroobjects join or diverge from current hydroobject
         for p in splitpoints:
@@ -223,6 +222,7 @@ class ProcessNetwork:
                     ):  # if the splitpoint is not the endpoint of the current hydroobject
                         # give each half of the split a separate row in the hydroobjects geodataframe
                         waterloop.loc[index, "geometry"] = split_line_by_point(row.geometry, p).geoms[0]
+                        ProcessProfiles.add_profiles_near_split(row, p)
                         row2 = waterloop.loc[index].copy()
                         row2["code"] = row2["code"] + "d"  # making code unique
                         row2["globalid"] = row2["globalid"] + "d"  # making globalid unique
@@ -231,6 +231,9 @@ class ProcessNetwork:
                         waterloop = pd.concat(
                             [waterloop, row2.to_frame().T], ignore_index=True
                         )  # append second half of split hydroobject to hydroobjects
+
+        def split_line_by_point(line, point, tolerance: float = self.checkbuffer[0]):
+            return split(snap(line, point, tolerance), point)
 
         waterloop.set_crs(epsg=28992, inplace=True, allow_override=True)
         waterloop.to_file(self.output_dir / "hydroobject.gpkg", driver="GPKG")

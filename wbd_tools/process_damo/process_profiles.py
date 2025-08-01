@@ -9,12 +9,14 @@ class ProcessProfiles:
     def __init__(self, output_dir):
         self.output_dir = Path(output_dir)
         self.source_data_dir = self.output_dir / "brondata"
+        self.profiles = gpd.read_file(self.source_data_dir / "profielpunt.gpkg")
 
     def run(self):
-        raw_data = gpd.read_file(self.source_data_dir / "profielpunt.gpkg")
+        raw_data = self.profiles
         raw_data["code"] = raw_data["profiellijnid"]
         network_data = gpd.read_file(self.source_data_dir / "hydroobject.gpkg")
 
+        # Correct Z-values and fill missing Z-values
         for index, row in raw_data.iterrows():
             no_z = np.isnan(row["Z"])
             if row["Z"] < -6 or no_z:
@@ -95,3 +97,57 @@ class ProcessProfiles:
         raw_data.to_file(self.output_dir / "profielpunt.gpkg", driver="GPKG")
 
         network_data.to_file(self.output_dir / "networkraw.gpkg", driver="GPKG")
+
+    def add_profiles_near_split(self, line, split_point):
+        import copy
+
+        # find profiles near upstream and downstream end of line
+        self.profiles[line["code"] == self.profiles["profiellijnid"][0:8]]
+        new_profiles = copy.copy(self.profiles)
+        distance = line.project(split_point, normalized=True)
+        for i in range(4):
+            z = self.profiles.loc[i, "geometry"].z * (1 - distance) + self.profiles.loc[i + 4, "geometry"].z * distance
+            new_profiles.loc[i, "geometry"].z = z
+            new_profiles.loc[i + 4, "geometry"].z = z
+
+        move_point_parallel_to_curve(split_point, line, distance_perpendicular_to_line)
+
+        def move_point_parallel_to_curve(point, linestring, distance_perpendicular_to_line):
+            # Step 1: Project the point onto the line to find position on the curve
+            projected_dist = linestring.project(point)
+            closest_point = linestring.interpolate(projected_dist)
+
+            # Step 2: Compute the perpendicular offset vector from the curve to the point
+            offset_vector = np.array([point.x - closest_point.x, point.y - closest_point.y])
+            offset_distance = np.linalg.norm(offset_vector)
+
+            if offset_distance == 0:
+                raise ValueError("Point lies exactly on the line — cannot determine offset direction.")
+
+            # Normalize the offset direction
+            offset_unit = offset_vector / offset_distance
+
+            # Step 3: Move along the curve
+            new_dist = projected_dist + distance_along_curve
+            new_dist = max(0, min(new_dist, linestring.length))  # Clamp to curve bounds
+            new_point_on_curve = linestring.interpolate(new_dist)
+
+            # Step 4: Compute tangent to curve at new point
+            # We'll approximate the tangent using a small delta
+            delta = 0.01
+            p_before = linestring.interpolate(max(0, new_dist - delta))
+            p_after = linestring.interpolate(min(linestring.length, new_dist + delta))
+            tangent_vector = np.array([p_after.x - p_before.x, p_after.y - p_before.y])
+            tangent_vector /= np.linalg.norm(tangent_vector)
+
+            # Compute normal vector (perpendicular to tangent)
+            normal_vector = np.array([-tangent_vector[1], tangent_vector[0]])
+
+            # Determine the sign of the offset (based on dot product with original offset vector)
+            sign = np.sign(np.dot(normal_vector, offset_unit))
+
+            # Step 5: Apply the perpendicular offset to the new point
+            new_point_coords = (
+                np.array([new_point_on_curve.x, new_point_on_curve.y]) + sign * normal_vector * offset_distance
+            )
+            return Point(new_point_coords)
