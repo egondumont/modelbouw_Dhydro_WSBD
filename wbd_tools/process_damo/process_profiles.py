@@ -2,7 +2,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
-from shapely import Point
+from shapely import Point, force_2d
 
 
 class ProcessProfiles:
@@ -99,20 +99,36 @@ class ProcessProfiles:
         network_data.to_file(self.output_dir / "networkraw.gpkg", driver="GPKG")
 
     def add_profiles_near_split(self, line, split_point):
+        """
+        .....
+
+        Args:
+            line (Geopandas dataframe): Hydroobject.
+            split_point Shapely Point): location where hydroobject will be split
+
+        Returns:
+            ...: ...
+
+        """
         import copy
 
-        # find profiles near upstream and downstream end of line
-        self.profiles[line["code"] == self.profiles["profiellijnid"][0:8]]
-        new_profiles = copy.copy(self.profiles)
+        # find profiles near upstream and downstream end of line (the have the same 8 characters in their 'profiellijnid')
+        new_profiles = copy.copy(self.profiles[line["code"] == self.profiles["profiellijnid"][0:8]])
         distance = line.project(split_point, normalized=True)
         for i in range(4):
+            # linear interpolation of elevations at either end of the original unsplitted hydroobject
             z = self.profiles.loc[i, "geometry"].z * (1 - distance) + self.profiles.loc[i + 4, "geometry"].z * distance
-            new_profiles.loc[i, "geometry"].z = z
-            new_profiles.loc[i + 4, "geometry"].z = z
+            # make one new profile on each side of the split
+            for j in [0,4]
+                new_profiles.loc[i+j, "geometry"].z = z
+                # new profile 1 m upstream and 1 m downstream of split
+                [new_profiles.loc[i, "geometry"].x, new_profiles.loc[i, "geometry"].y] = move_point_parallel_to_curve(
+                    line.interpolate(distance*line.length - (j-2.)/2.),
+                    force_2d(new_profiles.loc[i+j, "geometry"]),
+                    line,
+                    )
 
-        move_point_parallel_to_curve(split_point, line, distance_perpendicular_to_line)
-
-        def move_point_parallel_to_curve(point, linestring, distance_perpendicular_to_line):
+        def move_point_parallel_to_curve(distance, point, linestring):
             # Step 1: Project the point onto the line to find position on the curve
             projected_dist = linestring.project(point)
             closest_point = linestring.interpolate(projected_dist)
@@ -128,8 +144,7 @@ class ProcessProfiles:
             offset_unit = offset_vector / offset_distance
 
             # Step 3: Move along the curve
-            new_dist = projected_dist + distance_along_curve
-            new_dist = max(0, min(new_dist, linestring.length))  # Clamp to curve bounds
+            new_dist = max(0, min(distance, linestring.length))  # Clamp to curve bounds
             new_point_on_curve = linestring.interpolate(new_dist)
 
             # Step 4: Compute tangent to curve at new point
@@ -147,7 +162,4 @@ class ProcessProfiles:
             sign = np.sign(np.dot(normal_vector, offset_unit))
 
             # Step 5: Apply the perpendicular offset to the new point
-            new_point_coords = (
-                np.array([new_point_on_curve.x, new_point_on_curve.y]) + sign * normal_vector * offset_distance
-            )
-            return Point(new_point_coords)
+            return np.array([new_point_on_curve.x, new_point_on_curve.y]) + sign * normal_vector * offset_distance

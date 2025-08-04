@@ -40,10 +40,18 @@
    "default": ""
   },
   {
-   "name": "naam",
-   "type": "String",
+   "name": "soort_vispassage",
+   "type": "integer",
    "required": false,
    "src_col": "SOORTVISPASSAGE",
+   "func": "",
+   "default": ""
+  },
+  {
+   "name": "opmerking",
+   "type": "String",
+   "required": false,
+   "src_col": "WS_OPMERKING_L",
    "func": "",
    "default": ""
   }
