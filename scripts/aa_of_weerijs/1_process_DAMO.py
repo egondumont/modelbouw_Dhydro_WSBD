@@ -76,7 +76,6 @@ if activities["laden"]:
     )
     logging.info("finished data loading")
 
-
 if activities["profiles"]:
     logging.info("Start processing profiles")
     process_profiles = ProcessProfiles(output_dir)
