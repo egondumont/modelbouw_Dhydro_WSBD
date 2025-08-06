@@ -86,7 +86,7 @@ if activities["profiles"]:
 if activities["network"]:
     logging.info("Start processing network")
     process_network = ProcessNetwork(output_dir, checkbuffer)
-    process_network.run()
+    process_network.run(process_profiles)
     logging.info("finished processing network")
 
 if activities["culverts"]:

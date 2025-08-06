@@ -4,6 +4,7 @@
 # Egon Dumont, WSBD, 29 January 2025
 
 
+import copy
 from pathlib import Path
 
 import geopandas as gpd
@@ -12,8 +13,6 @@ import pandas as pd
 from shapely import distance
 from shapely.ops import snap, split
 
-from wbd_tools.process_damo import ProcessProfiles
-
 
 class ProcessNetwork:
     def __init__(self, output_dir, checkbuffer):
@@ -21,7 +20,7 @@ class ProcessNetwork:
         self.source_data_dir = self.output_dir / "brondata"
         self.checkbuffer = checkbuffer
 
-    def run(self):
+    def run(self, process_profiles):
         waterloop = gpd.read_file(self.output_dir / "networkraw.gpkg")
 
         waterloop["globalid"] = waterloop["code"]
@@ -211,35 +210,42 @@ class ProcessNetwork:
 
         # spit hydroobjects where other hydroobjects join or diverge from current hydroobject
         for p in splitpoints:
-            for index, row in waterloop.iterrows():
+            for index, line in waterloop.geometry.iterrows():
                 # first use 2 if statements to check if hydroobject needs to be split
-                if distance(row.geometry, p) < self.checkbuffer[0]:
+                if distance(line, p) < self.checkbuffer[0]:
                     # if the current hydroobject is close enough to the current split point
-                    if not row.geometry.boundary.contains(p):
+                    if not line.boundary.contains(p):
                         # if the splitpoint is not the endpoint of the current hydroobject
                         # make new profiles where the hydroobject will be split
-                        ProcessProfiles.add_profiles_near_split(row, p)
+                        process_profiles.add_profiles_near_split(line, p)
                         # give each half of the split a separate row in the hydroobjects geodataframe
-                        waterloop.loc[index, "geometry"] = split_line_by_point(row.geometry, p).geoms[0]
-                        row2 = waterloop.loc[index].copy()
-                        row2["code"] = row2["code"] + "d"  # making code unique
-                        row2["globalid"] = row2["globalid"] + "d"  # making globalid unique
-                        row2["nen3610id"] = row2["nen3610id"][:-2]  # making nen360id unique
-                        row2["geometry"] = split_line_by_point(row.geometry, p).geoms[1]
+                        waterloop.loc[index, "geometry"] = split_line_by_point(line, p).geoms[0]
+                        row = copy.deepcopy(waterloop.loc[index])
+                        row["code"] = row["code"] + "d"  # making code unique
+                        row["globalid"] = row["globalid"] + "d"  # making globalid unique
+                        row["nen3610id"] = row["nen3610id"][:-2]  # making nen360id unique
+                        row["geometry"] = split_line_by_point(line, p).geoms[1]
                         # append second half of split hydroobject to hydroobjects
-                        waterloop = pd.concat([waterloop, row2.to_frame().T], ignore_index=True)
+                        waterloop = pd.concat([waterloop, row.to_frame().T], ignore_index=True)
 
         def split_line_by_point(line, point, tolerance: float = self.checkbuffer[0]):
             return split(snap(line, point, tolerance), point)
 
         # remove hydrobjects that are fish passages bypassing weirs
         vispassages = gpd.read_file(self.source_data_dir / "vispassage.gpkg")
+
         for index, vispassage in vispassages.iterrows():
-            if vispassage["soort_vispassage"] == 2 or "slot" in vispassage["opmerking"]:
+            waterloopindex_vis = waterloop.sindex.query(vispassage, predicate="intersects")
+            if (
+                vispassage["soort_vispassage"] in [2, 98, 99]
+                and vispassage["opmerking"] in ["slot", "Wit"]
+                and vispassage["opmerking"] not in "hoofdloop"
+            ):
                 # found fish passage bypassing weir
-                waterloopindex_vis = waterloop.sindex.query(vispassage, predicate="intersects")
                 for i in waterloopindex_vis[1]:
                     waterloop.drop([i])
+            elif not vispassage["bovenstroomse_drempelhoogte"] or vispassage["bovenstroomse_drempelhoogte"] == 99:
+                waterloop.loc[index, "comment_vispassage"] = "vispassage zonder bovenstroomse drempelhoogte"
 
         waterloop.set_crs(epsg=28992, inplace=True, allow_override=True)
         waterloop.to_file(self.output_dir / "hydroobject.gpkg", driver="GPKG")
