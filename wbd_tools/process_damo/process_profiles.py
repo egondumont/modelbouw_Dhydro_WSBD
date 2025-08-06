@@ -129,9 +129,8 @@ class ProcessProfiles:
                     line,
                 )
                 new_profiles.iloc[i + j].geometry = Point(x, y, z)
-                new_profiles.iloc[
-                    i + j
-                ].profiellijnid = f"{hydroobject_code}_{'boven' if j == 0 else 'beneden'}_aantakking"
+                new_profiellijnid = f"{hydroobject_code}_{'boven' if j == 0 else 'beneden'}_aantakking"
+                new_profiles.iloc[i + j].profiellijnid = new_profiellijnid
 
         self.profiles = gpd.concat([self.profiles, new_profiles.to_frame().T], ignore_index=True)
 
