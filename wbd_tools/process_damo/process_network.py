@@ -10,7 +10,7 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from shapely import distance
+from shapely import distance, intersects
 from shapely.ops import snap, split
 
 
@@ -212,20 +212,21 @@ class ProcessNetwork:
         vispassages = gpd.read_file(self.source_data_dir / "vispassage.gpkg")
         for index, vispassage in vispassages.iterrows():
             buffer = vispassage.geometry.buffer(self.checkbuffer[0])
-            waterloopindex_vis = waterloop.sindex.query(buffer)
-            if (
-                vispassage["soort_vispassage"] in [2, 98, 99, "2", "98", "99"]
-                and any(c in vispassage["opmerking"] for c in ["slot", "Wit"])
-                and "hoofdloop" not in vispassage["opmerking"]
-            ):
-                # found fish passage bypassing weir
-                waterloop.drop(waterloopindex_vis)
-            elif (
-                not vispassage["bovenstroomse_drempelhoogte"]
-                or vispassage["bovenstroomse_drempelhoogte"] > 90
-                or vispassage["bovenstroomse_drempelhoogte"] < -10
-            ):
-                waterloop.loc[index, "comment_vispassage"] = "vispassage zonder bovenstroomse drempelhoogte"
+            for index2, row in waterloop.iterrows():
+                if intersects(row.geometry, buffer):
+                    if (
+                        vispassage["soort_vispassage"] in [2, 98, 99, "2", "98", "99"]
+                        and any(c in vispassage["opmerking"] for c in ["slot", "Wit"])
+                        and "hoofdloop" not in vispassage["opmerking"]
+                    ):
+                        # found fish passage bypassing weir
+                        waterloop.drop(index2, inplace=True)
+                    elif (
+                        not vispassage["bovenstroomse_drempelhoogte"]
+                        or vispassage["bovenstroomse_drempelhoogte"] > 90
+                        or vispassage["bovenstroomse_drempelhoogte"] < -10
+                    ):
+                        waterloop.loc[index, "comment_vispassage"] = "vispassage zonder bovenstroomse drempelhoogte"
 
         # split hydroobjects where other hydroobjects join or diverge from current hydroobject
         j = 0
