@@ -166,7 +166,19 @@ hydamo.branches.show_gpkg(fn_branches)
 # In[ ]:
 # dit zijn vispassages die er in preprocessing uit moeten (!), daarna kun je dit weggooien en de regel eronder uitcommenten
 gdf = gpd.read_file(fn_branches, layer="HydroObject")
-drop_branches = ["OVK20313", "OVK20310", "OVK50059", "OVK50060", "OVK50062", "OVK50059", "OVK20309", "OVK50061"]
+drop_branches = [
+    "OVK11964",
+    "OVK20313",
+    "OVK20310",
+    "OVK50059",
+    "OVK50060",
+    "OVK50062",
+    "OVK50059",
+    "OVK20309",
+    "OVK50061",
+    "OVK20308",
+    "OVK20582",
+]
 gdf = gdf[~gdf.code.isin(drop_branches)]
 hydamo.branches.set_data(gdf, index_col="code")
 # hydamo.branches.read_gpkg_layer(fn_branches, layer_name="HydroObject", index_col="code")
@@ -453,7 +465,7 @@ mesh.mesh1d_add_branches_from_gdf(
     fm.geometry.netfile.network,
     branches=hydamo.branches,
     branch_name_col="code",
-    node_distance=20,
+    node_distance=40,
     max_dist_to_struc=None,
     structures=structures,
 )
