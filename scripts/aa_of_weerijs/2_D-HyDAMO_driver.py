@@ -74,7 +74,8 @@ from hydrolib.dhydamo.io.drrwriter import DRRWriter
 # In[6]:
 
 
-TwoD = False
+TwoD = True
+TwoD_refined = False
 RR = False
 RTC = True
 
@@ -278,7 +279,7 @@ hydamo.boundary_conditions.set_data(boundaries_df, index_col="code")
 # laterals_df["globalid"] = laterals_df["code"]
 
 # # nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
-# afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
+afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
 
 # afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.code.isin(laterals_df.code)]
 # hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
@@ -756,10 +757,10 @@ hydamo.external_forcings.set_initial_waterdepth(1.5)
 
 
 if TwoD:
-    extent = gpd.read_file(data_path / "2D_extent.shp").at[0, "geometry"]
+    extent = gpd.read_file(fn_modelgebieden, layer="modelgebieden").at[0, "geometry"]
     network = fm.geometry.netfile.network
     cellsize = 50.0
-    rasterpath = data_path / "rasters/AHN_2m_clipped_filled.tif"
+    rasterpath = data_path / "rasters" / "AHN_2m_clipped_filled.tif"
 
 
 # Add a rectangular mesh::
@@ -789,7 +790,7 @@ if TwoD:
 # In[ ]:
 
 
-if TwoD:
+if TwoD & TwoD_refined:
     buffer = Polygon(hydamo.branches.buffer(50.0).union_all().exterior)
     if TwoD_option == "MK":
         print("Nodes before refinement:", network._mesh2d.mesh2d_node_x.size)
@@ -806,7 +807,7 @@ if TwoD:
 # In[ ]:
 
 
-if TwoD:
+if TwoD & TwoD_refined:
     if TwoD_option == "MK":
         print("Nodes before clipping:", network._mesh2d.mesh2d_node_x.size)
         for i, branch in hydamo.branches.iterrows():
@@ -873,9 +874,9 @@ if TwoD:
         links1d2d.convert_to_hydrolib()
 
     elif TwoD_option == "MK":
-        mesh.links1d2d_add_links_1d_to_2d(network)
+        # mesh.links1d2d_add_links_1d_to_2d(network)
         # mesh.links1d2d_add_links_2d_to_1d_lateral(network, max_length=50.)
-        # mesh.links1d2d_add_links_2d_to_1d_embedded(network)
+        mesh.links1d2d_add_links_2d_to_1d_embedded(network)
         mesh.links1d2d_remove_1d_endpoints(network)
 
 
