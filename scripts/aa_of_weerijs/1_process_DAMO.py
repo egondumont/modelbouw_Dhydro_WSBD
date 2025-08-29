@@ -61,6 +61,7 @@ if activities["laden"]:
     get_data = GetData(json_dir=json_dir, output_dir=output_dir, poly_mask=modelgebied)
     get_data.run(
         json_subset=[
+            "vispassage",
             "hydroobject",
             "kunstwerkopening",
             "regelmiddel",
@@ -75,7 +76,6 @@ if activities["laden"]:
     )
     logging.info("finished data loading")
 
-
 if activities["profiles"]:
     logging.info("Start processing profiles")
     process_profiles = ProcessProfiles(output_dir)
@@ -85,7 +85,7 @@ if activities["profiles"]:
 if activities["network"]:
     logging.info("Start processing network")
     process_network = ProcessNetwork(output_dir, checkbuffer)
-    process_network.run()
+    process_network.run(process_profiles)
     logging.info("finished processing network")
 
 if activities["culverts"]:

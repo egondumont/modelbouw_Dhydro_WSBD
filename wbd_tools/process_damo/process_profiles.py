@@ -2,19 +2,22 @@ from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
-from shapely import Point
+import pandas as pd
+from shapely import Point, force_2d
 
 
 class ProcessProfiles:
     def __init__(self, output_dir):
         self.output_dir = Path(output_dir)
         self.source_data_dir = self.output_dir / "brondata"
+        self.profiles = None
 
     def run(self):
         raw_data = gpd.read_file(self.source_data_dir / "profielpunt.gpkg")
         raw_data["code"] = raw_data["profiellijnid"]
         network_data = gpd.read_file(self.source_data_dir / "hydroobject.gpkg")
 
+        # Correct Z-values and fill missing Z-values
         for index, row in raw_data.iterrows():
             no_z = np.isnan(row["Z"])
             if row["Z"] < -6 or no_z:
@@ -92,6 +95,90 @@ class ProcessProfiles:
                 )
 
         raw_data.set_crs(epsg=28992, inplace=True, allow_override=True)
-        raw_data.to_file(self.output_dir / "profielpunt.gpkg", driver="GPKG")
+        raw_data.to_file(self.output_dir / "profielpuntraw.gpkg", driver="GPKG")
 
         network_data.to_file(self.output_dir / "networkraw.gpkg", driver="GPKG")
+
+    def add_profiles_near_split(
+        self, line, hydroobject_code, split_point, first_call: bool = False, last_call: bool = False
+    ):
+        """
+        Add profielpunten (DAMO-object) just upstream and downstream of location (split point) where an
+        existing hydrobject is split into two new hydroobjects by process_network.run()
+
+        Args:
+            line (Shapely Linestring): Hydroobject geometry to be split
+            hydroobject_code (str): Code of the hydroobject being split
+            first_call (bool): If True, this is the first call to this fundtion
+            last_call (bool): If True, this is the last call to this function
+            split_point (Shapely Point): Location where hydroobject will be split
+
+        Returns
+        -------
+            none: The function modifies the profiles attribute of the class in place. At the last
+            function call the updated profiles are saved to a new geopackage the output directory.
+        """
+        import copy
+
+        if first_call:
+            self.profiles = gpd.read_file(self.output_dir / "profielpuntraw.gpkg")
+
+        # find profiles near upstream and downstream end of line (they have the same 8 characters in their 'profiellijnid')
+        new_profiles = copy.deepcopy(
+            self.profiles[hydroobject_code == self.profiles["profiellijnid"].apply(lambda x: x[0:8])]
+        )
+        distance = line.project(split_point, normalized=True)
+        for i in range(4):
+            # linear interpolation of elevations at either end of the original unsplitted hydroobject
+            z = new_profiles.iloc[i].geometry.z * (1 - distance) + new_profiles.iloc[i + 4].geometry.z * distance
+            # make one new profile on each side of the split
+            for j in [0, 4]:
+                # new profile 1 m upstream and 1 m downstream of split
+                [x, y] = self.move_point_parallel_to_curve(
+                    distance * line.length + (j - 2.0) / 2.0,
+                    force_2d(new_profiles.iloc[i + j].geometry),
+                    line,
+                )
+                new_profiles.iloc[i + j].geometry = Point(x, y, z)
+                new_profiellijnid = f"{hydroobject_code}_{'boven' if j == 0 else 'beneden'}_aantakking"
+                new_profiles.iloc[i + j].profiellijnid = new_profiellijnid
+
+        self.profiles = pd.concat([self.profiles, new_profiles], ignore_index=True)
+
+        if last_call:
+            # save the updated profiles to the output directory
+            self.profiles.set_crs(epsg=28992, inplace=True, allow_override=True)
+            self.profiles.to_file(self.output_dir / "profielpunt.gpkg", driver="GPKG")
+
+    def move_point_parallel_to_curve(self, distance, point, linestring):
+        # Step 1: Project the point onto the line to find position on the curve
+        projected_dist = linestring.project(point)
+        closest_point = linestring.interpolate(projected_dist)
+
+        # Step 2: Compute the perpendicular offset vector from the curve to the point
+        offset_vector = np.array([point.x - closest_point.x, point.y - closest_point.y])
+        offset_distance = np.linalg.norm(offset_vector)
+
+        # Normalize the offset direction
+        offset_unit = offset_vector / offset_distance
+
+        # Step 3: Move along the curve
+        new_dist = max(0, min(distance, linestring.length))  # Clamp to curve bounds
+        new_point_on_curve = linestring.interpolate(new_dist)
+
+        # Step 4: Compute tangent to curve at new point
+        # We'll approximate the tangent using a small delta
+        delta = 0.01
+        p_before = linestring.interpolate(max(0, new_dist - delta))
+        p_after = linestring.interpolate(min(linestring.length, new_dist + delta))
+        tangent_vector = np.array([p_after.x - p_before.x, p_after.y - p_before.y])
+        tangent_vector /= np.linalg.norm(tangent_vector)
+
+        # Compute normal vector (perpendicular to tangent)
+        normal_vector = np.array([-tangent_vector[1], tangent_vector[0]])
+
+        # Determine the sign of the offset (based on dot product with original offset vector)
+        sign = np.sign(np.dot(normal_vector, offset_unit))
+
+        # Step 5: Apply the perpendicular offset to the new point
+        return np.array([new_point_on_curve.x, new_point_on_curve.y]) + sign * normal_vector * offset_distance

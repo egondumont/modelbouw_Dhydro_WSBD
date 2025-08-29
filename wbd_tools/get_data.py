@@ -2,14 +2,14 @@
 Make sure the working directory is the folder where this file is located
 """
 
-import sys
-from pathlib import Path
-import os
-import logging
-from wbd_tools.tohydamogml.hydamo_table import HydamoObject
 import json
-import geopandas as gpd
+import logging
 import shutil
+from pathlib import Path
+
+import geopandas as gpd
+
+from wbd_tools.tohydamogml.hydamo_table import HydamoObject
 
 JSON_DIR = Path(__file__).parent / "json"
 JSON_OBJECTS = [
@@ -24,12 +24,12 @@ JSON_OBJECTS = [
     {"json_file": "gemaal.json"},
     {"json_file": "pomp.json"},
     {"json_file": "sturing.json"},
-    {"json_file": "bodemval.json"},
+    {"json_file": "vispassage.json"},
     {"json_file": "randvoorwaarden.json"},
 ]
 
 
-def init_gdb(damo_gdb:Path, json_objects: dict = JSON_OBJECTS) -> Path:
+def init_gdb(damo_gdb: Path, json_objects: dict = JSON_OBJECTS) -> Path:
     """Checks if DAMO GeoDataBase exists and populates JSON dir
 
     Returns:
@@ -43,10 +43,9 @@ def init_gdb(damo_gdb:Path, json_objects: dict = JSON_OBJECTS) -> Path:
     json_dst_dir = damo_gdb.parent.joinpath("json")
     if not json_dst_dir.exists():
         json_dst_dir.mkdir()
-    
+
     # update and write filename and layer of jsons
     for json_object in json_objects:
-
         # define file paths
         json_src_file = JSON_DIR.joinpath(json_object["json_file"])
         json_dst_file = json_dst_dir.joinpath(json_object["json_file"])
@@ -59,13 +58,15 @@ def init_gdb(damo_gdb:Path, json_objects: dict = JSON_OBJECTS) -> Path:
 
         # update path if layer is in layers
         if layer_specs["source"]["layer"].lower() in layers["lower_casing"].to_numpy():
-            layer_specs["source"]["layer"] = layers.set_index("lower_casing").at[layer_specs["source"]["layer"].lower(), "name"]
+            layer_specs["source"]["layer"] = layers.set_index("lower_casing").at[
+                layer_specs["source"]["layer"].lower(), "name"
+            ]
             layer_specs["source"]["path"] = damo_gdb.as_posix()
 
         # write json
         json_dst_file.write_text(json.dumps(layer_specs, indent=1))
 
-    return json_dst_dir    
+    return json_dst_dir
 
 
 class GetData:
@@ -76,18 +77,20 @@ class GetData:
         self.mask = poly_mask
 
     # Optional: select a part of the sourcedata by a shape
-    def run(self, json_subset:list[str] | None = None):
-
+    def run(self, json_subset: list[str] | None = None):
         # if not a selection of json-objects is specified, we look trough json_dir
         if json_subset is not None:
-            json_objects = [self.json_dir.joinpath(i["json_file"]) for i in JSON_OBJECTS if Path(i["json_file"]).stem in json_subset]
+            json_objects = [
+                self.json_dir.joinpath(i["json_file"])
+                for i in JSON_OBJECTS
+                if Path(i["json_file"]).stem in json_subset
+            ]
         else:
             json_objects = [self.json_dir.joinpath(i["json_file"]) for i in JSON_OBJECTS]
 
-        
         if self.source_data_dir.exists():
             shutil.rmtree(self.source_data_dir)
-        
+
         report_dir = self.source_data_dir / "report"
         report_dir.mkdir(parents=True)
 
