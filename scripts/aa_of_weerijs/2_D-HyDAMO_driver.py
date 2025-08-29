@@ -670,7 +670,7 @@ hydamo.external_forcings.convert.boundaries(hydamo.boundary_conditions, mesh1d=f
 # In[ ]:
 
 # we zetten een afvoergolf met piek van 20 m3/s op Aa of Weerijs bij Belgische grens
-series = afvoergolf(piekafvoer=20, start=datetime(2016, 6, 1), duur=timedelta(days=1), nalooptijd=timedelta(days=1))
+series = afvoergolf(piekafvoer=50, start=datetime(2016, 6, 1), duur=timedelta(days=1), nalooptijd=timedelta(days=1))
 
 
 hydamo.external_forcings.boundary_nodes["AAOW"]["time"] = (
@@ -683,7 +683,9 @@ hydamo.external_forcings.boundary_nodes["AAOW"]["time_unit"] = (
 )
 
 # we zetten een afvoergolf met piek van 5 m3/s op Berkenbeek bij Belgische grens
-series = afvoergolf(piekafvoer=5, start=datetime(2016, 6, 1), duur=timedelta(hours=12), nalooptijd=timedelta(hours=36))
+series = afvoergolf(
+    piekafvoer=10, start=datetime(2016, 6, 1), duur=timedelta(hours=12), nalooptijd=timedelta(hours=36)
+)
 
 hydamo.external_forcings.boundary_nodes["BEB"]["time"] = (
     (series.index - series.index[0]).total_seconds() / 60.0
@@ -760,7 +762,8 @@ if TwoD:
     extent = gpd.read_file(fn_modelgebieden, layer="modelgebieden").at[0, "geometry"]
     network = fm.geometry.netfile.network
     cellsize = 50.0
-    rasterpath = data_path / "rasters" / "AHN_2m_clipped_filled.tif"
+    rasterpath = fnames["rasters_dir"] / "ahn.tif"
+    # rasterpath = fnames["rasters_dir"] / "999.tif"
 
 
 # Add a rectangular mesh::
@@ -1520,7 +1523,8 @@ fm.geometry.bedlevtype = 1  # 1: at cell center (tiles xz,yz,bl,bob=max(bl)), 2:
 fm.geometry.changestructuredimensions = (
     0  # Change the structure dimensions in case these are inconsistent with the channel dimensions.
 )
-
+fm.geometry.allowbndatbifurcation = True  # If you don't do this, and you have your 2D up untill your boundary node, the existence of a 1D2D flow link will be seen as bifurcation.
+# Therefore your boundary-condition will not be read.
 fm.sediment.sedimentmodelnr = 0
 
 fm.numerics.cflmax = 0.7  # Maximum Courant nr.
