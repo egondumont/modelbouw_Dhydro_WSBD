@@ -59,7 +59,6 @@ from hydrolib.dhydamo.geometry import mesh, spatial
 from hydrolib.dhydamo.geometry.gridgeom.links1d2d import Links1d2d
 from hydrolib.dhydamo.geometry.mesh2d_gridgeom import Rectangular
 from hydrolib.dhydamo.geometry.viz import plot_network
-from hydrolib.dhydamo.io.common import ExtendedDataFrame
 from hydrolib.dhydamo.io.dimrwriter import DIMRWriter
 from hydrolib.dhydamo.io.drrwriter import DRRWriter
 
@@ -180,12 +179,11 @@ hydamo.profile.read_gpkg_layer(
 )
 
 hydamo.snap_to_branch_and_drop(hydamo.profile, hydamo.branches, snap_method="intersecting", drop_related=False)
-ruwheid = hydamo.profile.copy(deep=True)
+ruwheid = pd.DataFrame(hydamo.profile.copy(deep=True))
 ruwheid = ruwheid.rename(columns={"ruwheidswaardelaag": "ruwheidlaag", "ruwheidswaardehoog": "ruwheidhoog"})
 ruwheid["profielpuntid"] = ruwheid["globalid"]
-ruwheid.drop("geometry", axis=1, inplace=True)
+ruwheid.drop(columns=["geometry"], inplace=True)
 
-hydamo.profile_roughness = ExtendedDataFrame()
 hydamo.profile_roughness.set_data(ruwheid, index_col="code")
 
 
