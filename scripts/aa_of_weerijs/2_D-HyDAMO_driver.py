@@ -37,6 +37,8 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # and from hydrolib-core
 sys.path.append(r".")
+from datetime import datetime
+
 from hydrolib.core.dflowfm.crosssection.models import *
 from hydrolib.core.dflowfm.ext.models import ExtModel
 from hydrolib.core.dflowfm.friction.models import FrictionModel
@@ -117,8 +119,8 @@ data_path = Path()
 fnames = get_fnames()
 modelnaam = Path(__file__).parent.name
 
-# output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
-output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", "20250725")
+output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
+
 output_path = output_dir / "dhydro"
 
 if output_path.exists():
