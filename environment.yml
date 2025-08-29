@@ -28,6 +28,9 @@ dependencies:
   - mypy
   - rioxarray=0.18.2
   - ruff
+  - streamlit
+  - tomli
+  - tomli-w
   - geocube
   - networkx
   - pcraster

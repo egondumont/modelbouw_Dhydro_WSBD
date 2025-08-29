@@ -1,0 +1,7 @@
+project_name = "Demo"
+debug = false
+retries = 3
+threshold = 0.8
+mode = "fast"
+tags = []
+output_dir = "output"
