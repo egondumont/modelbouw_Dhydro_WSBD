@@ -21,7 +21,7 @@ logger = get_logger()
 
 AHN_FILE = "dtm_2m.tif"
 MAX_FILL_DEPTH = 5000
-CLUSTERS: list[int] = [5]
+CLUSTERS: list[int] = [13]
 RASTER_TYPE = "map"  # we schrijven map-files, omdat pcr2numpy een exception geeft: ValueError: resize only works on single-segment arrays
 
 # %%

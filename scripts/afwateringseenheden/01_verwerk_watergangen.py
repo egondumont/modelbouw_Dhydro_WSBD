@@ -79,7 +79,7 @@ logger.info("vinden verbonden b-waterlopen")
 
 dfs["b_waterlopen"] = gpd.read_file(fnames["b_waterlopen"], engine="pyogrio", bbox=bbox)[["Code_objec", "geometry"]]
 dfs["b_waterlopen"] = connecting_secondary_lines(
-    lines_gdf=dfs["waterloopsegmenten"], secondary_lines_gdf=dfs["b_waterlopen"], tolerance=10
+    lines_gdf=dfs["waterloopsegmenten"], secondary_lines_gdf=dfs["b_waterlopen"], tolerance=500
 )
 
 
