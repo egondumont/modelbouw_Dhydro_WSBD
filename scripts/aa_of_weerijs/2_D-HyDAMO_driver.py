@@ -18,7 +18,6 @@ import os
 import shutil
 import sys
 import warnings
-from datetime import datetime
 from pathlib import Path
 
 import contextily as cx
@@ -118,7 +117,8 @@ data_path = Path()
 fnames = get_fnames()
 modelnaam = Path(__file__).parent.name
 
-output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
+# output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", datetime.today().strftime("%Y%m%d"))
+output_dir = fnames["modellen_output"].joinpath(f"{modelnaam}", "20250725")
 output_path = output_dir / "dhydro"
 
 if output_path.exists():
@@ -256,18 +256,24 @@ laterals_df = laterals_df[laterals_df["branch_offset"].notna()]
 
 # setten van de data. We hoeven niet meer te snappen, want dat hebben we hiervoor al gedaan
 laterals_df["globalid"] = laterals_df["code"]
-hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
 
-# nu gaan we de lateral_discharges bepalen op basis van 1mm/dag afvoer
+
+# afwateringseenheden inlezen
+min_area = 1000  # kleiner dan dit gooien we (voor nu) weg, zodat script niet crashed. #TODO: afwateringseenheden eerder samenvoegen!
 afwateringseenheden_df = gpd.read_file(fn_afwateringseenheden, layer="afwateringseenheden")
+afwateringseenheden_df = afwateringseenheden_df[afwateringseenheden_df.area > min_area]
 afwateringseenheden_df["lateraleknoopid"] = "lat_" + afwateringseenheden_df["code"]
-
-afwateringseenheden_df = afwateringseenheden_df[(afwateringseenheden_df.lateraleknoopid).isin(laterals_df.code)]
-
-lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
-
 afwateringseenheden_df["globalid"] = afwateringseenheden_df["code"]
 
+# filteren afwateringseenheden en laterals
+afwateringseenheden_df = afwateringseenheden_df[(afwateringseenheden_df.lateraleknoopid).isin(laterals_df.code)]
+laterals_df = laterals_df[(laterals_df.code).isin(afwateringseenheden_df.lateraleknoopid)]
+
+# constante laterale afvoeren
+lateral_discharges = afwateringseenheden_df.set_index("code").area * 0.001 / 86400  # mm/dag * oppervlak
+
+# toevoegen aan hydamo
+hydamo.laterals.set_data(gdf=laterals_df.reset_index(), index_col="code")
 hydamo.catchments.set_data(afwateringseenheden_df, index_col="code")
 
 
