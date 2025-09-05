@@ -201,7 +201,7 @@ def get_line_connections(
 def _select_indices(line, remaining, tolerance):
     """Find indices in remaining that are within tolerance of given line"""
     candidates = remaining.sindex.query(line.buffer(tolerance), predicate="intersects")
-    nearby = remaining.iloc[[i for i in candidates if i in remaining.index]]
+    nearby = remaining.iloc[candidates]
 
     close = nearby[nearby.distance(line) < tolerance]
     return close.index.to_numpy()
@@ -211,6 +211,7 @@ def connecting_secondary_lines(
     lines_gdf: gpd.GeoDataFrame,
     secondary_lines_gdf: gpd.GeoDataFrame,
     tolerance: float = 1,
+    primary_code: str = "Code_objec",
 ) -> gpd.GeoDataFrame:
     """Select all secondary lines that are connected via other lines to lines_gdf
 
@@ -218,9 +219,9 @@ def connecting_secondary_lines(
         lines_gdf (gpd.GeoDataFrame): GeoDataFrame with lines
         secondary_lines_gdf (gpd.GeoDataFrame):  GeoDataFrame with lines
         tolerance (float, optional): tolerance to find line-connections from secondary_lines. Defaults to 1.
-
+        primary_code (str, optional): field in lines_gdf to add as code_primary_line to secondary_lines_gdf
     Returns:
-        gpd.GeoDataFrame: Selection of secondary_lines_gdf
+        (gpd.GeoDataFrame, gpd.GeoDataFrame): Selection of secondary_lines_gdf, unconnected secondary_lines_gdf
     """
     remaining = secondary_lines_gdf.copy()
     if not remaining.crs.equals(lines_gdf.crs):
@@ -229,17 +230,22 @@ def connecting_secondary_lines(
     lines_gdf = lines_gdf.copy()
     lines_gdf.loc[:, "line_fid"] = lines_gdf.index
 
-    selections = []
+    # list of geodataframes with secondary_lines_gdf connected to each line in lines_gdf
+    selections: list[gpd.GeoDataFrame] = []
 
     for line_row in lines_gdf.itertuples():
         if remaining.empty:
             break
 
+        # to_visit is the list with geometries we want to connect lines from secondary_lines_gdf to
         to_visit = [line_row.geometry]
+        # collected_indices are all indices in secondary_lines_gdf connected to this line_row
         collected_indices = set()
 
         while to_visit:
-            current_geom = to_visit.pop()
+            current_geom = to_visit.pop()  # get last line in to_visit and pop from list
+
+            # find indices of connecting secondary lines by spatial search within tolerance
             indices = _select_indices(line=current_geom, remaining=remaining, tolerance=tolerance)
 
             # Only consider truly new indices
@@ -247,14 +253,17 @@ def connecting_secondary_lines(
             if not new_indices:
                 continue
 
+            # add new indices to collected_indices and add the corresponding geometries to too visit
             collected_indices.update(new_indices)
             new_geoms = remaining.loc[new_indices].geometry.tolist()
             to_visit.extend(new_geoms)
 
+        # append connected secondary lines to selection and pop from remaining (so we only add once)
         if collected_indices:
             group = remaining.loc[list(collected_indices)].copy()
             group["line_fid"] = line_row.line_fid
+            group["code_primary_line"] = getattr(line_row, primary_code)
             selections.append(group)
             remaining = remaining.drop(index=collected_indices)
 
-    return gpd.GeoDataFrame(pd.concat(selections, ignore_index=True), crs=lines_gdf.crs)
+    return gpd.GeoDataFrame(pd.concat(selections, ignore_index=True), crs=lines_gdf.crs), remaining
