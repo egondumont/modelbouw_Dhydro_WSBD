@@ -11,7 +11,7 @@ Een workflow voor het bouwen van DHydro modellen binnen waterschap Brabantse Del
 Clone deze repository en daarnaast de branch `hkv_dhydamo_development` van HYDROLIB: [https://github.com/deltares/hydrolib](https://github.com/deltares/hydrolib)
 
 ### Conda environment
-Maak de juiste conda-environment aan op basis van `environment.yml`
+Navigeer naar de map waar je 'environment.yml' heb opgeslagen en maak de juiste conda-environment aan op basis van `environment.yml`
 
 ```
 conda env create -f environment.yml

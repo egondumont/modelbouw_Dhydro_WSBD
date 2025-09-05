@@ -1,28 +1,36 @@
-import pcraster as pcr
+# %%
 from pathlib import Path
-import rasterio
-from wbd_tools.afwateringseenheden.rasters import vectorize_data
+
 import numpy as np
+import pcraster as pcr
+import rasterio
+
+from wbd_tools.afwateringseenheden.rasters import vectorize_data
 
 
 def raster_to_pcr(raster_file, dtype: np.dtype | None = None):
     """Read non-PCRaster into PCRaster object"""
-    with rasterio.open(raster_file) as src:
-        # set dtype
-        if dtype is None:
-            dtype = src.profile["dtype"]
-        if np.issubdtype(np.dtype(dtype), np.integer):
-            pcr_valuescale = pcr.Nominal
-        elif np.issubdtype(np.dtype(dtype), np.floating):
-            pcr_valuescale = pcr.Scalar
+    if raster_file.suffix == ".map":
+        return pcr.readmap(raster_file.as_posix())
+    else:
+        with rasterio.open(raster_file) as src:
+            # set dtype
+            if dtype is None:
+                dtype = src.profile["dtype"]
+            if np.issubdtype(np.dtype(dtype), np.integer):
+                pcr_valuescale = pcr.Nominal
+            elif np.issubdtype(np.dtype(dtype), np.floating):
+                pcr_valuescale = pcr.Scalar
 
-        data = src.read(1).astype(dtype)
-        nodata = src.nodata
-        return pcr.numpy2pcr(pcr_valuescale, data, nodata)
+            data = src.read(1).astype(dtype)
+            nodata = src.nodata
+            return pcr.numpy2pcr(pcr_valuescale, data, nodata)
 
 
 def set_clone_from_raster(raster_file):
     """Set PCRaster clone from non PCRaster"""
+    if raster_file.suffix == ".map":
+        pcr.setclone(raster_file.as_posix())
     with rasterio.open(raster_file) as src:
         nrRows = src.height
         nrCols = src.width
@@ -67,20 +75,26 @@ def calculate_subcatchments(
 
     # read rasters
     elevation = raster_to_pcr(elevation_raster)
-    water_segements = raster_to_pcr(water_segments_raster, dtype="int32")
+    water_segments = raster_to_pcr(water_segments_raster, dtype="int32")
     areas = raster_to_pcr(areas_raster, dtype=np.dtype("int32"))
 
     # Local Drainage Direction map from LDD
     ldd = pcr.lddcreate(elevation, max_fill_depth, 1e31, 1e31, 1e31)
 
     # subcatchments from outlets
-    catchments = pcr.subcatchment(ldd, water_segements)
+    catchments = pcr.subcatchment(ldd, water_segments)
 
     # vectorize sub-catchments
     with rasterio.open(elevation_raster, "r") as src:
         transform = src.transform
     nodata = -999
-    data = pcr.pcr2numpy(catchments, nodata).astype("int32")
+    if elevation_raster.suffix == ".map":
+        catchments_map = elevation_raster.with_name("catchments.map")
+        pcr.report(catchments, catchments_map.as_posix())
+        with rasterio.open(catchments_map) as src:
+            data = src.read(1).astype("int32")
+    else:
+        data = pcr.pcr2numpy(catchments, nodata).astype("int32")
     gdf = vectorize_data(data=data, nodata=nodata, transform=transform, crs=crs)
     gdf.to_file(subatchments_gpkg)
 

@@ -1,15 +1,12 @@
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from shapely.geometry import LineString, MultiPoint, Point
-from shapely.ops import split
+from shapely.ops import split, substring
 from shapely.strtree import STRtree
-from shapely.ops import substring
-import numpy as np
 
 
-def snap_point_to_line(
-    point: Point, line: LineString, tolerance: float | None = 5
-) -> Point:
+def snap_point_to_line(point: Point, line: LineString, tolerance: float | None = 5) -> Point:
     """Snap a Point to a LineString within tolerance
 
     Args:
@@ -99,10 +96,7 @@ def split_lines_to_points(
         candidate_points = tree.query(line)
 
         # Snap points to line (within tolerance)
-        snapped_points = [
-            snap_point_to_line(point_geoms[p], line, tolerance)
-            for p in candidate_points
-        ]
+        snapped_points = [snap_point_to_line(point_geoms[p], line, tolerance) for p in candidate_points]
         snapped_points = [p for p in snapped_points if p is not None]
 
         # split line into parts if we have snapped points
@@ -119,20 +113,12 @@ def split_lines_to_points(
 
         for line_part in line_parts:
             if line_part.geom_type != "LineString":
-                raise ValueError(
-                    f"At Index {line_row.Index} splitting results in a geometry {line_part.geom_type}"
-                )
+                raise ValueError(f"At Index {line_row.Index} splitting results in a geometry {line_part.geom_type}")
             line_segments = split_line_by_length(line_part, max_length)
             for line_segment in line_segments:
-                data += [
-                    row_dict(
-                        row=line_row, geometry=line_segment, columns=lines_gdf.columns
-                    )
-                ]
+                data += [row_dict(row=line_row, geometry=line_segment, columns=lines_gdf.columns)]
 
-    return gpd.GeoDataFrame(
-        data, index=pd.Index(range(1, len(data) + 1), name="fid"), crs=lines_gdf.crs
-    )
+    return gpd.GeoDataFrame(data, index=pd.Index(range(1, len(data) + 1), name="fid"), crs=lines_gdf.crs)
 
 
 def get_line_connections(
@@ -162,9 +148,7 @@ def get_line_connections(
     points_gdf = points_gdf.reset_index(drop=True).copy()
 
     # Build lookup of start and end points
-    lines_gdf["start_point"] = lines_gdf.boundary.explode(index_parts=True).xs(
-        0, level=1
-    )
+    lines_gdf["start_point"] = lines_gdf.boundary.explode(index_parts=True).xs(0, level=1)
     lines_gdf["end_point"] = lines_gdf.boundary.explode(index_parts=True).xs(1, level=1)
 
     start_tree = STRtree(lines_gdf["start_point"].to_numpy())
@@ -177,11 +161,7 @@ def get_line_connections(
         end_pt = row.end_point
         # Find segments whose start matches this segment's end
         candidates = start_tree.query(end_pt)
-        candidates = [
-            i
-            for i in candidates
-            if end_pt.distance(lines_gdf.at[i, "start_point"]) <= tolerance
-        ]
+        candidates = [i for i in candidates if end_pt.distance(lines_gdf.at[i, "start_point"]) <= tolerance]
         if candidates:
             for candidate in candidates:
                 if end_pt.distance(lines_gdf.at[candidate, "start_point"]) <= tolerance:
@@ -193,22 +173,14 @@ def get_line_connections(
 
                 # find point candidates
                 point_idx = [
-                    i
-                    for i in points_tree.query(end_pt)
-                    if points_gdf.at[i, "geometry"].distance(end_pt) <= tolerance
+                    i for i in points_tree.query(end_pt) if points_gdf.at[i, "geometry"].distance(end_pt) <= tolerance
                 ]
                 if len(point_idx) > 1:
-                    raise ValueError(
-                        f"for line fid {row.line_fid} two we find two points with fids {point_idx}"
-                    )
+                    raise ValueError(f"for line fid {row.line_fid} two we find two points with fids {point_idx}")
                 elif len(point_idx) == 1:
                     row_dict = {
                         **row_dict,
-                        **{
-                            k: v
-                            for k, v in points_gdf.loc[point_idx[0]].items()
-                            if k != "geometry"
-                        },
+                        **{k: v for k, v in points_gdf.loc[point_idx[0]].items() if k != "geometry"},
                     }
                 data += [row_dict]
         else:
@@ -229,7 +201,8 @@ def get_line_connections(
 def _select_indices(line, remaining, tolerance):
     """Find indices in remaining that are within tolerance of given line"""
     candidates = remaining.sindex.query(line.buffer(tolerance), predicate="intersects")
-    nearby = remaining.iloc[[i for i in candidates if i in remaining.index]]
+    nearby = remaining.iloc[candidates]
+
     close = nearby[nearby.distance(line) < tolerance]
     return close.index.to_numpy()
 
@@ -238,6 +211,7 @@ def connecting_secondary_lines(
     lines_gdf: gpd.GeoDataFrame,
     secondary_lines_gdf: gpd.GeoDataFrame,
     tolerance: float = 1,
+    primary_code: str = "Code_objec",
 ) -> gpd.GeoDataFrame:
     """Select all secondary lines that are connected via other lines to lines_gdf
 
@@ -245,9 +219,9 @@ def connecting_secondary_lines(
         lines_gdf (gpd.GeoDataFrame): GeoDataFrame with lines
         secondary_lines_gdf (gpd.GeoDataFrame):  GeoDataFrame with lines
         tolerance (float, optional): tolerance to find line-connections from secondary_lines. Defaults to 1.
-
+        primary_code (str, optional): field in lines_gdf to add as code_primary_line to secondary_lines_gdf
     Returns:
-        gpd.GeoDataFrame: Selection of secondary_lines_gdf
+        (gpd.GeoDataFrame, gpd.GeoDataFrame): Selection of secondary_lines_gdf, unconnected secondary_lines_gdf
     """
     remaining = secondary_lines_gdf.copy()
     if not remaining.crs.equals(lines_gdf.crs):
@@ -256,34 +230,40 @@ def connecting_secondary_lines(
     lines_gdf = lines_gdf.copy()
     lines_gdf.loc[:, "line_fid"] = lines_gdf.index
 
-    selections = []
+    # list of geodataframes with secondary_lines_gdf connected to each line in lines_gdf
+    selections: list[gpd.GeoDataFrame] = []
 
     for line_row in lines_gdf.itertuples():
         if remaining.empty:
             break
 
+        # to_visit is the list with geometries we want to connect lines from secondary_lines_gdf to
         to_visit = [line_row.geometry]
+        # collected_indices are all indices in secondary_lines_gdf connected to this line_row
         collected_indices = set()
 
         while to_visit:
-            current_geom = to_visit.pop()
-            indices = _select_indices(
-                line=current_geom, remaining=remaining, tolerance=tolerance
-            )
+            current_geom = to_visit.pop()  # get last line in to_visit and pop from list
+
+            # find indices of connecting secondary lines by spatial search within tolerance
+            indices = _select_indices(line=current_geom, remaining=remaining, tolerance=tolerance)
 
             # Only consider truly new indices
             new_indices = [i for i in indices if i not in collected_indices]
             if not new_indices:
                 continue
 
+            # add new indices to collected_indices and add the corresponding geometries to too visit
             collected_indices.update(new_indices)
             new_geoms = remaining.loc[new_indices].geometry.tolist()
             to_visit.extend(new_geoms)
 
+        # append connected secondary lines to selection and pop from remaining (so we only add once)
         if collected_indices:
             group = remaining.loc[list(collected_indices)].copy()
             group["line_fid"] = line_row.line_fid
+            group["code_primary_line"] = getattr(line_row, primary_code)
             selections.append(group)
             remaining = remaining.drop(index=collected_indices)
 
-    return gpd.GeoDataFrame(pd.concat(selections, ignore_index=True), crs=lines_gdf.crs)
+    return gpd.GeoDataFrame(pd.concat(selections, ignore_index=True), crs=lines_gdf.crs), remaining
