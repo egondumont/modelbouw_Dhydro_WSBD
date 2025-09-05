@@ -4,6 +4,7 @@ Read esri filegdb and keep original objectid
 
 import fiona
 import geopandas as gpd
+
 from wbd_tools.tohydamogml.config import COLNAME_OID
 
 
@@ -14,7 +15,5 @@ def read_filegdb(filegdb, layer):
         gdf.loc[:, COLNAME_OID] = gdf.index.astype(int)
         gdf.reset_index(inplace=True, drop=True)
     else:
-        raise ValueError(
-            f"layer '{layer}' not in layer list: {fiona.listlayers(filegdb)}"
-        )
+        raise ValueError(f"layer '{layer}' not in layer list: {fiona.listlayers(filegdb)}")
     return gdf

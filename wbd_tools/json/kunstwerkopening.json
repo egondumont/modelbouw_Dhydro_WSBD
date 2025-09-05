@@ -31,7 +31,7 @@
             "name": "stuwid",
             "type": "string",
             "required": true,
-            "src_col": "GLOBALID",
+            "src_col": "CODE",
             "func": "",
             "default": "-99"
         },
@@ -39,8 +39,8 @@
             "name": "globalid",
             "type": "String",
             "required": true,
-            "src_col": "",
-            "func": "globalid",
+            "src_col": "CODE",
+            "func": "",
             "default": "99"
         },
         {

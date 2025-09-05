@@ -1,15 +1,16 @@
 {
   "object": "sturing",
   "source": {
-    "path": "00_Brondata\\gdb\\DAMO_dummy.gdb",
-    "layer": "Sturing",
+    "path": "d:\\repositories\\modelbouw_Dhydro_WSBD\\input\\acceptatiedatabase.gdb",
+    "layer": "sturing",
     "filter": "",
     "filter_type": "",
     "query":""
   },
   "geometry": {
       "drop": false,
-      "func": ""
+      "one2one": true,
+      "func": "dummy_points_outside__beheergebied"
   },
   "related_data": {
     "path": "",
@@ -19,10 +20,26 @@
     "replace_index_col": ""
   },
   "index": {
-      "name": "code",
-      "src_col": "CODE"
+      "name": "OBJECTID",
+      "src_col": "OBJECTID"
     },
   "attributes": [
+    {
+      "name": "code",
+      "type": "String",
+      "required": false,
+      "src_col": "OBJECTID",
+      "func": "",
+      "default": ""
+    },
+    {
+      "name": "globalid",
+      "type": "String",
+      "required": true,
+      "src_col": "",
+      "func": "globalid",
+      "default": "99"
+    },
     {
       "name": "nen3610id",
       "type": "String",
@@ -31,73 +48,80 @@
       "func": "nen3610id",
       "default": "99"
     },
-    { "name": "codegerelateerdobject",
+    { "name": "indicatiecomplexesturing",
+      "type": "string",
+      "required": false,
+      "src_col": "INDICATIECOMPLEXESTURING",
+      "func": "",
+      "default": ""
+    },
+    { "name": "beginperiode",
+      "type": "Date",
+      "required": false,
+      "src_col": "BEGINPERIODE",
+      "func": "",
+      "default": ""
+    },
+    { "name": "eindperiode",
+      "type": "date",
+      "required": false,
+      "src_col": "EINDPERIODE",
+      "func": "",
+      "default": ""
+    },
+    { "name": "stuurvariabele",
       "type": "String",
       "required": false,
-      "src_col": "CODEGERELATEERDOBJECT",
+      "src_col": "STUURVARIABELE",
       "func": "",
       "default": ""
     },
-    { "name": "complexesturingcode",
-      "type": "Integer",
+    { "name": "doelvariabele",
+      "type": "string",
       "required": true,
-      "src_col": "COMPLEXESTURINGSCODE",
+      "src_col": "DOELVARIABELE",
       "func": "",
-      "default": ""
-    },
-    { "name": "geldigbegintijd",
-      "type": "Date",
-      "required": true,
-      "src_col": "GELDIGBEGINTIJD",
-      "func": "",
-      "default": ""
-    },
-    { "name": "geldigeindtijd",
-      "type": "Date",
-      "required": true,
-      "src_col": "GELDIGEINDTIJD",
-      "func": "",
-      "default": ""
-    },
-    { "name": "stuurvariabelecode",
-      "type": "Integer",
-      "required": true,
-      "src_col": "STUURVARIABELECODE",
-      "func": "",
-      "default": ""
-    },
-    { "name": "doelvariabelecode",
-      "type": "Integer",
-      "required": true,
-      "src_col": "DOELVARIABELECODE",
-      "func": "",
-      "default": ""
+      "default": "waterstand"
     },
     { "name": "streefwaarde",
       "type": "Double",
       "required": true,
       "src_col": "STREEFWAARDE",
       "func": "",
-      "default": ""
+      "default": "99."
     },
-    { "name": "bovenmarge",
+    { "name": "bovengrens",
       "type": "Double",
       "required": true,
-      "src_col": "BOVENMARGE",
+      "src_col": "BOVENGRENS",
+      "func": "",
+      "default": "99.1"
+    },
+    { "name": "ondergrens",
+      "type": "Double",
+      "required": true,
+      "src_col": "ONDERGRENS",
+      "func": "",
+      "default": "99.9"
+    },
+    { "name": "typecontroller",
+      "type": "string",
+      "required": true,
+      "src_col": "TYPECONTROLLER",
+      "func": "",
+      "default": "interval"
+    },
+    { "name": "pompid",
+      "type": "string",
+      "required": false,
+      "src_col": "POMPID",
       "func": "",
       "default": ""
     },
-    { "name": "ondermarge",
-      "type": "Double",
-      "required": true,
-      "src_col": "ONDERMARGE",
-      "func": "",
-      "default": ""
-    },
-    { "name": "sturingtypecode",
-      "type": "Integer",
-      "required": true,
-      "src_col": "STURINGSTYPECODE",
+    { "name": "regelmiddelid",
+      "type": "string",
+      "required": false,
+      "src_col": "REGELMIDDELID",
       "func": "",
       "default": ""
     }
